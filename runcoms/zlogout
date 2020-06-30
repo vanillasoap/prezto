@@ -17,3 +17,31 @@ SAYINGS=(
 echo $SAYINGS[$(($RANDOM % ${#SAYINGS} + 1))]
 
 } >&2
+
+#
+# Executes commands at logout.
+#
+# Authors:
+#   Sorin Ionescu <sorin.ionescu@gmail.com>
+#
+
+# Execute code only if STDERR is bound to a TTY.
+[[ -o INTERACTIVE && -t 2 ]] && {
+
+SAYINGS=(
+    "“So long and thanks for all the fish.”\n  —Douglas Adams"
+    "“You know my Dad actually wrote the song ‘Wonderwall’ on the back of a beer mat in the space of 10 minutes, don’t you?”\n —Kerry"
+    "“Me and Levi have created this gang called The Dump Gang, and we’re gonna build a den at the dump out of old car parts, and we found this washing machine that we’re gonna use as a safe, so if you want anything putting in there you gotta tell me now.”\n —Kerry"
+    "“Kerry has a lot of mates that are in Year 7 and below because she likes to think that she can control them and that they do what she asks. Which is a bit sad actually. And a bit weird.”\n —Kurtan"
+    "“There’s a balance between being nice and being feared. Like, Dr. Barnados he was just too nice and not feared, so he just got overrun by orphans and everyone just took the piss.”\n —Kerry"
+    "“Scarecrow Festival is the most important day of the year. That’s the beautiful thing about living in the village. Everyone comes together on days like Scarecrow Festival and just forgets their utter hatred of each other.”\n —Kurtan"
+    "“In this village, people respect me because I’m hard as f***. If five nasty f***s from Quinnington wanna rumble I say bring it on!”\n —Kerry"
+    "“I went through a really dark phase, didn’t I Ker? Listening to Papa Roach and blowing everything up with them little French bangers.”\n —Kurtan"
+    "“No birthday posts yet. Well, it is only half five in the morning, but I would have expected at least a couple of nighthawkers by now. Nighthawkers are basically people who stay up late on Facebook and they post just after midnight on your wall.”\n —Kerry"
+    
+)
+
+# Print a randomly-chosen message:
+echo $SAYINGS[$(($RANDOM % ${#SAYINGS} + 1))]
+
+} >&2
