@@ -17,7 +17,7 @@ fi
 # Editors
 #
 
-export EDITOR='nano'
+export EDITOR='subl'
 export VISUAL='nano'
 export PAGER='less'
 
@@ -61,3 +61,17 @@ export LESS='-F -g -i -M -R -S -w -X -z-4'
 if (( $#commands[(i)lesspipe(|.sh)] )); then
   export LESSOPEN="| /usr/bin/env $commands[(i)lesspipe(|.sh)] %s 2>&-"
 fi
+
+#
+# Homebrew settings
+#
+
+export HOMEBREW_NO_AUTO_UPDATE=1
+export HOMEBREW_CC=clang
+export HOMEBREW_CXX=clang++
+
+#
+# Python3
+#
+
+export PATH="/usr/local/opt/python@3.8/bin:$PATH"
