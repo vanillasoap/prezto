@@ -2,10 +2,6 @@
 # Aliases
 #
 
-
-# Misc
-alias crop='python3 /Volumes/Raid/Dropbox/BAS/2020/Moving\ through/Webpage/Content/Chosen/crop.py'
-
 # Group images based on similarity
 alias groupimg='python3 /Users/so/Git/groupImg/cli/groupimg.py'
 
@@ -39,7 +35,7 @@ alias bubu='bubo && bubc'
 
 # Apps
 alias nf='neofetch'
-alias lønsj='lunchy --restart'
+alias lunch='lunchy --restart'
 
 # Network
 alias myip='curl ifconfig.co'						# myip:				Public facing IP Address
