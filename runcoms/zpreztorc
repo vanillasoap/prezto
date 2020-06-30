@@ -40,7 +40,9 @@ zstyle ':prezto:load' pmodule \
   'syntax-highlighting' \
   'autosuggestions' \
   'history-substring-search' \
-  'homebrew'
+  'homebrew' \
+  'key-bindings' \
+  'aliases'
 
 #
 # Autosuggestions
