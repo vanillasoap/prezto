@@ -22,12 +22,15 @@ if (( $#local_nodenv_paths || $+commands[nodenv] )); then
   eval "$(nodenv init - --no-rehash zsh)"
 
 # Load manually installed nvm into the shell session.
+elif (( $+functions[nvm] )); then
+  # Preserve shell integration already initialized by the user.
+  :
 elif (( $#local_nvm_paths )); then
   source "$local_nvm_paths[1]" --no-use
 
 # Load package manager installed nvm into the shell session.
 elif (( $+commands[brew] )) \
-      && [[ -d "${nvm_path::="$(brew --prefix 2> /dev/null)"/opt/nvm}" ]]; then
+      && [[ -s "${nvm_path::="${HOMEBREW_PREFIX:-$(brew --prefix 2> /dev/null)}/opt/nvm"}/nvm.sh" ]]; then
   source "$nvm_path/nvm.sh" --no-use
 fi
 

@@ -119,6 +119,15 @@ zstyle ':prezto:module:python:virtualenv' auto-switch 'yes'
 zstyle ':prezto:module:python:virtualenv' initialize 'no'
 ```
 
+Python environment auto-switching activates a local `.venv` directory, a named
+environment in `WORKON_HOME`, or an environment named by a `.venv` file. It keeps
+that environment active while moving within the project and deactivates it on
+exit. Manually selected environments are preserved. Git worktrees and submodules
+are recognized as project boundaries without running Git on each directory change.
+
+Pyenv initialization skips startup rehashing. If a newly installed executable is
+missing from the shims, run `pyenv rehash` once after installation.
+
 ## Aliases
 
 Aliases are enabled by default. To disable them, add the following to

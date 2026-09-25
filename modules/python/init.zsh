@@ -26,7 +26,7 @@ if [[ -s "${local_pyenv::=${PYENV_ROOT:-$HOME/.pyenv}/bin/pyenv}" ]] \
   [[ -s $local_pyenv ]] && path=($local_pyenv:h $path)
 
   # Load pyenv into the shell session.
-  eval "$(pyenv init - zsh)"
+  eval "$(pyenv init - --no-rehash zsh)"
 
 # Prepend PEP 370 per user site packages directory, which defaults to
 # ~/Library/Python on macOS and ~/.local elsewhere, to PATH. The
@@ -50,41 +50,49 @@ if (( ! $+commands[(i)python[0-9.]#] && ! $+functions[pyenv] && ! $+commands[con
 fi
 
 function _python-workon-cwd {
-  # Check if this is a Git repo.
-  local GIT_REPO_ROOT="$(git rev-parse --show-toplevel 2> /dev/null)"
-  # Get absolute path, resolving symlinks.
-  local PROJECT_ROOT="$PWD:A"
-  while [[ "$PROJECT_ROOT" != "/" && ! -e "$PROJECT_ROOT/.venv" \
-        && ! -d "$PROJECT_ROOT/.git"  && "$PROJECT_ROOT" != "$GIT_REPO_ROOT" ]]; do
-    PROJECT_ROOT="$PROJECT_ROOT:h"
+  local project_root="$PWD:A" env_name env_dir use_workon=0
+  # A .git file is also a project boundary (worktrees and submodules).
+  while [[ $project_root != / && ! -e $project_root/.venv && ! -e $project_root/.git ]]; do
+    project_root=$project_root:h
   done
-  if [[ $PROJECT_ROOT == "/" ]]; then
-    PROJECT_ROOT="."
+
+  if [[ -f $project_root/.venv ]]; then
+    env_name="$(<$project_root/.venv)"
+  elif [[ -f $project_root/.venv/bin/activate ]]; then
+    env_name="$project_root/.venv"
+  elif [[ $project_root != / ]]; then
+    env_name=$project_root:t
   fi
-  # Check for virtualenv name override.
-  local ENV_NAME=""
-  if [[ -f "$PROJECT_ROOT/.venv" ]]; then
-    ENV_NAME="$(<$PROJECT_ROOT/.venv)"
-  elif [[ -f "$PROJECT_ROOT/.venv/bin/activate" ]]; then
-    ENV_NAME="$PROJECT_ROOT/.venv"
-  elif [[ $PROJECT_ROOT != "." ]]; then
-    ENV_NAME="$PROJECT_ROOT:t"
-  fi
-  if [[ -n $CD_VIRTUAL_ENV && "$ENV_NAME" != "$CD_VIRTUAL_ENV" ]]; then
-    # We've just left the repo, deactivate the environment.
-    # Note: this only happens if the virtualenv was activated automatically.
-    deactivate && unset CD_VIRTUAL_ENV
-  fi
-  if [[ $ENV_NAME != "" ]]; then
-    # Activate the environment only if it is not already active.
-    if [[ "$VIRTUAL_ENV" != "$WORKON_HOME/$ENV_NAME" ]]; then
-      if [[ -n "$WORKON_HOME" && -e "$WORKON_HOME/$ENV_NAME/bin/activate" ]]; then
-        workon "$ENV_NAME" && export CD_VIRTUAL_ENV="$ENV_NAME"
-      elif [[ -e "$ENV_NAME/bin/activate" ]]; then
-        source $ENV_NAME/bin/activate && export CD_VIRTUAL_ENV="$ENV_NAME"
-      fi
+
+  if [[ -n $env_name ]]; then
+    if [[ $env_name != /* && -n $WORKON_HOME && -f $WORKON_HOME/$env_name/bin/activate ]]; then
+      env_dir="$WORKON_HOME/$env_name"
+      (( $+functions[workon] )) && use_workon=1
+    elif [[ $env_name == /* && -f $env_name/bin/activate ]]; then
+      env_dir=$env_name
+    elif [[ -f $project_root/$env_name/bin/activate ]]; then
+      env_dir="$project_root/$env_name"
     fi
+    [[ -z $env_dir ]] || env_dir=$env_dir:A
   fi
+
+  # Own only environments activated by this hook. A manual replacement releases
+  # that ownership, so changing directory cannot deactivate the user's choice.
+  if [[ -n $CD_VIRTUAL_ENV && ( -z $VIRTUAL_ENV || $VIRTUAL_ENV:A != $CD_VIRTUAL_ENV ) ]]; then
+    unset CD_VIRTUAL_ENV
+  fi
+  if [[ -n $CD_VIRTUAL_ENV && $env_dir != $CD_VIRTUAL_ENV ]]; then
+    deactivate || return
+    unset CD_VIRTUAL_ENV
+  fi
+  [[ -z $VIRTUAL_ENV && -n $env_dir ]] || return 0
+
+  if (( use_workon )); then
+    workon "$env_name" || return
+  else
+    source "$env_dir/bin/activate" || return
+  fi
+  export CD_VIRTUAL_ENV="$env_dir"
 }
 
 # Load auto workon cwd hook.

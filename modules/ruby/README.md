@@ -19,6 +19,9 @@ not known to cause conflicts with shell scripts.
 This will be loaded automatically if _rbenv_ is installed to `$RBENV_ROOT`,
 _`~/.rbenv`_, or if the `rbenv` command is on the path.
 
+Initialization skips startup rehashing. If a newly installed executable is
+missing from the shims, run `rbenv rehash` once after installation.
+
 ## rvm
 
 An alternative to the above is to use [The Ruby Version Manager (_rvm_)][3],

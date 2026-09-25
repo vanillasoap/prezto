@@ -18,7 +18,7 @@ if (( $#local_rbenv_paths || $+commands[rbenv] )); then
   # Ensure manually installed rbenv is added to path when present.
   [[ -s $local_rbenv_paths[1] ]] && path=($local_rbenv_paths[1]:h $path)
 
-  eval "$(rbenv init - zsh)"
+  eval "$(rbenv init - --no-rehash zsh)"
 
 # Load manually installed rvm into the shell session.
 elif (( $#local_rvm_paths )); then
