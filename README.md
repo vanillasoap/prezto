@@ -100,6 +100,38 @@ git submodule update --init --recursive
 Prezto has many features disabled by default. Read the source code and the
 accompanying README files to learn about what is available.
 
+Run `zprezto-doctor` in an initialized shell to inspect loaded modules, completion
+cache availability, the update upstream and submodule pins. It does not change
+configuration, repair files or contact the network. A nonzero status means a
+configured module did not load or a dependency check found a problem.
+
+See [performance measurements and the improvement plan](docs/performance.md) for
+the isolated startup benchmark and its limits.
+
+### Project environments with direnv
+
+[Direnv](https://direnv.net/) is an optional way to load and unload project
+environment variables. After installing it, add its
+[official Zsh hook](https://direnv.net/docs/hook.html) at the end of `.zshrc`, after
+Prezto initialization:
+
+```sh
+eval "$(direnv hook zsh)"
+```
+
+Review each project's `.envrc` before authorizing it with `direnv allow`. If
+direnv manages the same Python or Ruby environment, disable the competing Prezto
+auto-switch hook in `.zpreztorc`:
+
+```sh
+zstyle ':prezto:module:python:virtualenv' auto-switch 'no'
+zstyle ':prezto:module:ruby:chruby' auto-switch 'no'
+```
+
+Version managers can remain installed to provide interpreters. Direnv adds work
+to prompt and directory-change hooks, so measure a trial before expecting a speed
+improvement. Prezto does not install or enable it automatically.
+
 ### Modules
 
 01. Browse [_`modules`_][9] to see what is available.

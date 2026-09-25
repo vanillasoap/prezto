@@ -52,6 +52,62 @@ function zprezto-update {
     command git submodule update --init --recursive
   )
 }
+# Report the current shell's configuration without changing it or fetching updates.
+function zprezto-doctor {
+  emulate -L zsh
+  local result=0 pmodule upstream submodules line
+  local -a pmodules
+  print -r -- "Zsh: $ZSH_VERSION"
+  print -r -- "Prezto: $ZPREZTODIR"
+
+  zstyle -a ':prezto:load' pmodule pmodules
+  for pmodule in "$pmodules[@]"; do
+    if zstyle -t ":prezto:module:$pmodule" loaded; then
+      print -r -- "Module $pmodule: loaded"
+    else
+      print -r -- "Module $pmodule: not loaded (check requirements and startup errors)"
+      result=1
+    fi
+  done
+
+  if zstyle -t ':prezto:module:completion' loaded; then
+    local dump="${XDG_CACHE_HOME:-$HOME/.cache}/prezto/zcompdump-$ZSH_VERSION"
+    if [[ -s $dump ]]; then
+      print -r -- "Completion cache: $dump"
+      [[ -s $dump.zwc ]] && print 'Compiled completion cache: present'
+    else
+      print 'Completion cache: unavailable (completion can run without a cache)'
+    fi
+  fi
+
+  if ! (( $+commands[git] )); then
+    print 'Git: unavailable; update and submodule checks require Git'
+    return 1
+  fi
+  if ! command git -C "$ZPREZTODIR" rev-parse --git-dir > /dev/null 2>&1; then
+    print 'Git: this installation has no repository metadata'
+    return $result
+  fi
+  upstream="$(command git -C "$ZPREZTODIR" rev-parse --abbrev-ref --symbolic-full-name '@{upstream}' 2> /dev/null)"
+  print -r -- "Update upstream: ${upstream:-not configured}"
+  if submodules="$(command git -C "$ZPREZTODIR" submodule status --recursive 2> /dev/null)"; then
+    local mismatched=0
+    for line in "${(@f)submodules}"; do
+      [[ $line == [-+U]* ]] && (( ++mismatched ))
+    done
+    if (( mismatched )); then
+      print -r -- "Submodules: $mismatched missing, mismatched or conflicted pins; run zprezto-update after saving local work"
+      result=1
+    else
+      print 'Submodules: pins match'
+    fi
+  else
+    print 'Submodules: unable to inspect repository metadata'
+    result=1
+  fi
+  return $result
+}
+
 #
 # Module Loader
 #
