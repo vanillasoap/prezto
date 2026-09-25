@@ -63,6 +63,7 @@ try:
             samples[name].append(measure(name))
     print(json.dumps({
         "zsh": fixture.command([ZSH, "--version"]).stdout.strip(),
+        "locale": fixture.env["LC_ALL"],
         "commit": fixture.git(REPO, "rev-parse", "HEAD"),
         "scope": "Isolated source-init only; excludes first precmd and terminal rendering",
         "runs": args.runs,

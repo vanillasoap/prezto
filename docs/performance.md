@@ -8,15 +8,17 @@ python3 -B tests/benchmark.py --runs 30
 
 It uses disposable configuration and caches, preserves HOME, and does not read
 personal shell startup files. Profiles run in shuffled order after warmups. The
-JSON output includes raw samples, median, p95, Zsh version and repository commit.
+JSON output includes raw samples, median, p95, Zsh version, locale and repository
+commit. The portable harness uses `LC_ALL=C`.
 The first sample includes a fresh completion cache; subsequent samples reuse it.
 Filesystem caches are not flushed. This measures loading Prezto and exiting,
 excluding the first prompt hook, terminal rendering and personal configuration.
 
 ## Baseline and current tradeoffs
 
-Measurements on x86_64 macOS with Zsh 5.9.2, September 25, 2026, used 30 warm
-samples per profile. These are separate runs on the same machine, not paired
+Earlier audit measurements on x86_64 macOS with Zsh 5.9.2, September 25, 2026,
+used `LANG=en_US.UTF-8` and 30 warm samples per profile. These are separate runs
+on the same machine, not paired
 measurements or cross-platform promises.
 
 | Profile | Before core fixes | After core fixes |
@@ -34,6 +36,11 @@ permissions, then reuses a compiled dump. New and replaced completion definition
 take effect immediately; cache builds recover after interruption and do not
 depend on login shells. An initial implementation that rescanned inputs twice
 cost about 47 ms extra and was replaced. Faster invalidation remains useful work.
+
+The shipped harness subsequently measured commit `75f32d6` with `LC_ALL=C`:
+Pure's warm median was 72.42 ms (p95 74.18 ms), and Pure with suggestions and
+highlighting was 89.97 ms (p95 92.21 ms), across 30 samples each. Those figures
+are a separate baseline; compare runs using the same harness and locale.
 
 The language changes remove specific repeated work:
 
