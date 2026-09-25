@@ -6,6 +6,15 @@ completions from the [zsh-completions][1] project.
 This module must be loaded late _after_ the _`utility`_ module and all other
 modules that provide completion definitions.
 
+The completion module manages and compiles its own cache in
+`${XDG_CACHE_HOME:-$HOME/.cache}/prezto`, separately for each Zsh version.
+Changing completion paths, filenames or modification times rebuilds the cache;
+otherwise it is reused for up to 20 hours. Directory permission and ownership
+changes also invalidate the cache. Each rebuild ignores insecure completion
+directories. Concurrent shells initialize without writing the cache
+when another shell is rebuilding it, and interrupted builds do not leave locks
+that need manual removal.
+
 ## Options
 
 - `COMPLETE_IN_WORD` complete from both ends of a word.

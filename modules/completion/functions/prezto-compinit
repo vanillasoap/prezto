@@ -1,0 +1,57 @@
+# Initialize completion and own the dump's validation, locking and compilation.
+emulate -L zsh
+setopt EXTENDED_GLOB
+autoload -Uz compinit
+
+local dump="${XDG_CACHE_HOME:-$HOME/.cache}/prezto/zcompdump-$ZSH_VERSION"
+local lock_fd signature cached=0
+local -a files mtimes modes owners groups directories
+
+# A contending shell can initialize without a dump. Kernel locks are released
+# on exit, so an interrupted build cannot leave a stale lock directory behind.
+if ! zmodload -F zsh/system b:zsystem || ! zmodload -F zsh/stat b:zstat \
+    || ! { [[ -d "$dump:h" ]] || command mkdir -p -- "$dump:h" } \
+    || ! { : >> "$dump.lock" } \
+    || ! zsystem flock -t 0 -f lock_fd "$dump.lock"; then
+  compinit -i -D
+  return
+fi
+
+{
+  files=(${^fpath}/_*(N))
+  if (( $#files )); then
+    zstat +mtime -A mtimes -- "$files[@]" || { compinit -i -D; return }
+  fi
+  # Plain data, never sourced. Include order, names and modification times so
+  # provider changes invalidate the dump even when the file count is unchanged.
+  directories=(${^fpath}(N/) ${^fpath:h}(N/))
+  zstat +mode -A modes -- "$directories[@]"
+  zstat +uid -A owners -- "$directories[@]"
+  zstat +gid -A groups -- "$directories[@]"
+  signature="${(pj:\0:)fpath}"$'\0'"${(pj:\0:)files}"$'\0'"${(j: :)mtimes}"$'\0'"$modes:$owners:$groups"
+  if [[ ! $dump(#qNmh-20) || ! -f "$dump.files" \
+      || "$(<"$dump.files")" != "$signature" ]]; then
+    command rm -f -- "$dump" "$dump.zwc" "$dump.files"
+  else
+    cached=1
+  fi
+
+  # Audit when inputs change or the 20-hour cache expires. Directory permission
+  # and ownership changes also invalidate the cache, without a second file scan.
+  if (( cached )); then
+    compinit -C -d "$dump" || return
+  else
+    compinit -i -d "$dump" || return
+  fi
+  if [[ -s $dump ]]; then
+    [[ -f "$dump.files" ]] || print -rn -- "$signature" >| "$dump.files"
+    if [[ ! -s "$dump.zwc" || "$dump" -nt "$dump.zwc" ]]; then
+      if zcompile -R "$dump.$$.zwc" "$dump"; then
+        command mv -f -- "$dump.$$.zwc" "$dump.zwc"
+      fi
+    fi
+  fi
+} always {
+  [[ ! -e "$dump.$$.zwc" ]] || command rm -f -- "$dump.$$.zwc"
+  zsystem flock -u "$lock_fd"
+}

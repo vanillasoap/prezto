@@ -22,48 +22,34 @@ unset min_zsh_version
 # and won't affect the environment of the calling shell
 function zprezto-update {
   (
-    function cannot-fast-forward {
-      local STATUS="$1"
-      [[ -n "${STATUS}" ]] && printf "%s\n" "${STATUS}"
-      printf "Unable to fast-forward the changes. You can fix this by "
-      printf "running\ncd '%s' and then\n'git pull' " "${ZPREZTODIR}"
-      printf "to manually pull and possibly merge in changes\n"
-    }
-    builtin cd -q -- "${ZPREZTODIR}" || return 7
-    local orig_branch="$(git symbolic-ref HEAD 2> /dev/null | cut -d '/' -f 3)"
-    if [[ "$orig_branch" == "master" ]]; then
-      git fetch || return "$?"
-      local UPSTREAM=$(git rev-parse '@{u}')
-      local LOCAL=$(git rev-parse HEAD)
-      local REMOTE=$(git rev-parse "$UPSTREAM")
-      local BASE=$(git merge-base HEAD "$UPSTREAM")
-      if [[ $LOCAL == $REMOTE ]]; then
-        printf "There are no updates.\n"
-        return 0
-      elif [[ $LOCAL == $BASE ]]; then
-        printf "There is an update available. Trying to pull.\n\n"
-        if git pull --ff-only; then
-          printf "Syncing submodules\n"
-          git submodule sync --recursive
-          git submodule update --init --recursive
-          return $?
-        else
-          cannot-fast-forward
-          return 1
-        fi
-      elif [[ $REMOTE == $BASE ]]; then
-        cannot-fast-forward "Commits in master that aren't in upstream."
-        return 1
-      else
-        cannot-fast-forward "Upstream and local have diverged."
-        return 1
-      fi
-    else
-      printf "zprezto install at '%s' is not on the master branch " "${ZPREZTODIR}"
-      printf "(you're on '%s')\nUnable to automatically update.\n" "${orig_branch}"
+    builtin cd -q -- "$ZPREZTODIR" || return 1
+    local upstream
+    upstream="$(command git rev-parse --abbrev-ref --symbolic-full-name '@{upstream}' 2> /dev/null)" || {
+      print -u2 -- "zprezto-update: the current branch needs a configured upstream"
       return 1
-    fi
-    return 1
+    }
+
+    # Refuse local edits before changing either the parent or its dependencies.
+    command git diff --quiet --ignore-submodules=all &&
+      command git diff --cached --quiet --ignore-submodules=all &&
+      command git submodule foreach --quiet --recursive '
+        git diff --quiet && git diff --cached --quiet &&
+        test -z "$(git ls-files --others --exclude-standard)"
+      ' || {
+        print -u2 -- "zprezto-update: commit or stash local changes before updating"
+        return 1
+      }
+
+    command git fetch || return
+    command git merge --ff-only "$upstream" || {
+      print -u2 -- "zprezto-update: cannot fast-forward; resolve the branch manually"
+      return 1
+    }
+
+    # Always reconcile pins, even after an interrupted update whose parent
+    # checkout already reached upstream. Never force a submodule checkout.
+    command git submodule sync --recursive || return
+    command git submodule update --init --recursive
   )
 }
 #
@@ -75,17 +61,21 @@ function pmodload {
   local -a pmodules
   local -a pmodule_dirs
   local -a locations
+  local -a user_pmodule_dirs
+  local user_dir
   local pmodule
   local pmodule_location
+  local result=0
   local pfunction_glob='^([_.]*|prompt_*_setup|README*|*~)(-.N:t)'
 
   # Load in any additional directories and warn if they don't exist
   zstyle -a ':prezto:load' pmodule-dirs 'user_pmodule_dirs'
   for user_dir in "$user_pmodule_dirs[@]"; do
     if [[ ! -d "$user_dir" ]]; then
-      echo "$0: Missing user module dir: $user_dir"
+      print -u2 -- "$0: Missing user module dir: $user_dir"
     fi
   done
+  user_pmodule_dirs=("${(@)user_pmodule_dirs:A}")
 
   pmodule_dirs=("$ZPREZTODIR/modules" "$ZPREZTODIR/contrib" "$user_pmodule_dirs[@]")
 
@@ -94,17 +84,23 @@ function pmodload {
 
   # Load Prezto modules.
   for pmodule in "$pmodules[@]"; do
-    if zstyle -t ":prezto:module:$pmodule" loaded 'yes' 'no'; then
+    if zstyle -t ":prezto:module:$pmodule" loaded; then
+      continue
+    elif zstyle -t ":prezto:module:$pmodule" loading; then
+      print -u2 -- "$0: circular module dependency: $pmodule"
+      result=1
       continue
     else
       locations=(${pmodule_dirs:+${^pmodule_dirs}/$pmodule(-/FN)})
       if (( ${#locations} > 1 )); then
         if ! zstyle -t ':prezto:load' pmodule-allow-overrides 'yes'; then
-          print "$0: conflicting module locations: $locations"
+          print -u2 -- "$0: conflicting module locations: $locations"
+          result=1
           continue
         fi
       elif (( ${#locations} < 1 )); then
-        print "$0: no such module: $pmodule"
+        print -u2 -- "$0: no such module: $pmodule"
+        result=1
         continue
       fi
 
@@ -126,17 +122,22 @@ function pmodload {
         done
       }
 
+      zstyle ":prezto:module:$pmodule" loading 'yes'
+      local module_result=0
       if [[ -s "${pmodule_location}/init.zsh" ]]; then
         source "${pmodule_location}/init.zsh"
+        module_result=$?
       elif [[ -s "${pmodule_location}/${pmodule}.plugin.zsh" ]]; then
         source "${pmodule_location}/${pmodule}.plugin.zsh"
+        module_result=$?
       fi
+      zstyle -d ":prezto:module:$pmodule" loading
 
-      if (( $? == 0 )); then
+      if (( module_result == 0 )); then
         zstyle ":prezto:module:$pmodule" loaded 'yes'
       else
         # Remove the $fpath entry.
-        fpath[(r)${pmodule_location}/functions]=()
+        fpath[(r)${(b)pmodule_location}/functions]=()
 
         function {
           local pfunction
@@ -152,9 +153,11 @@ function pmodload {
         }
 
         zstyle ":prezto:module:$pmodule" loaded 'no'
+        result=1
       fi
     fi
   done
+  return $result
 }
 
 #
@@ -165,7 +168,7 @@ function pmodload {
 # to rely on dirty hacks to force prezto into a directory. Additionally, it
 # needs to be done here because inside the pmodload function ${0:h} evaluates to
 # the current directory of the shell rather than the prezto dir.
-ZPREZTODIR=${0:h}
+ZPREZTODIR=${0:A:h}
 
 # Source the Prezto configuration file.
 if [[ -s "${ZDOTDIR:-$HOME}/.zpreztorc" ]]; then
@@ -192,6 +195,8 @@ for zfunction ("$zfunctions[@]") autoload -Uz "$zfunction"
 unset zfunction{s,}
 
 # Load Prezto modules.
-zstyle -a ':prezto:load' pmodule 'pmodules'
-pmodload "$pmodules[@]"
-unset pmodules
+function {
+  local -a pmodules
+  zstyle -a ':prezto:load' pmodule 'pmodules'
+  pmodload "$pmodules[@]"
+}
