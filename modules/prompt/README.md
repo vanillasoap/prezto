@@ -2,6 +2,10 @@
 
 Loads prompt [themes][1].
 
+Pure and Sorin share the async library bundled with Pure. The `async` function
+link selects that provider so both themes receive its worker recovery and result
+parsing fixes, including when switching themes in an existing shell.
+
 ## Settings
 
 ### Prompt Theme

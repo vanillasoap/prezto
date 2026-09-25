@@ -69,4 +69,3 @@ class ShellTestCase(unittest.TestCase):
         self.git(directory, "symbolic-ref", "HEAD", "refs/heads/main")
         self.git(directory, "config", "commit.gpgsign", "false")
         self.git(directory, "config", "core.hooksPath", os.devnull)
-
