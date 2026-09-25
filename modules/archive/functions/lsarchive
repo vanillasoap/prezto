@@ -8,6 +8,8 @@
 # function lsarchive {
 
 local verbose
+local result=0
+setopt LOCAL_OPTIONS PIPE_FAIL
 
 if (( $# == 0 )); then
   cat >&2 <<EOF
@@ -18,6 +20,7 @@ options:
 
 Report bugs to <sorin.ionescu@gmail.com>.
 EOF
+  return 1
 fi
 
 if [[ "$1" == "-v" || "$1" == "--verbose" ]]; then
@@ -28,6 +31,7 @@ fi
 while (( $# > 0 )); do
   if [[ ! -s "$1" ]]; then
     print "$0: file not valid: $1" >&2
+    result=1
     shift
     continue
   fi
@@ -40,7 +44,7 @@ while (( $# > 0 )); do
       || xzcat "$1" | tar t${verbose:+v}f - ;;
     (*.tar.zma|*.tlz) tar --lzma --help &> /dev/null \
       && tar --lzma -t${verbose:+v}f "$1" \
-      || lzcat "$1" | tar x${verbose:+v}f - ;;
+      || lzcat "$1" | tar t${verbose:+v}f - ;;
     (*.tar.zst|*.tzst) tar -I zstd -t${verbose:+v}f "$1" ;;
     (*.tar) tar t${verbose:+v}f "$1" ;;
     (*.zip|*.jar) unzip -l${verbose:+v} "$1" ;;
@@ -52,11 +56,14 @@ while (( $# > 0 )); do
     (*.7z) 7za l "$1" ;;
     (*)
       print "$0: cannot list: $1" >&2
-      success=1
+      false
     ;;
   esac
 
+  (( $? == 0 )) || result=1
   shift
 done
+
+return $result
 
 # }

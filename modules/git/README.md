@@ -360,8 +360,12 @@ You can temporarily bypass an alias by prefixing it with a backward slash:
 - `git-stash-clear-interactive` asks for confirmation before clearing the stash.
 - `git-stash-dropped` lists dropped stashed states.
 - `git-stash-recover` recovers given dropped stashed states.
-- `git-submodule-move` moves a submodule.
-- `git-submodule-remove` removes a submodule.
+- `git-submodule-move` moves a submodule with `git mv`, preserving its checkout
+  and local history. Run it from the repository root with source and destination
+  paths.
+- `git-submodule-remove` removes a submodule with `git rm`. It refuses local
+  changes and retains the submodule's Git database for recovery. Run it from the
+  repository root with the submodule path, which may differ from its name.
 
 ## Theming
 

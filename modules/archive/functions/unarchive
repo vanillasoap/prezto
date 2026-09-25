@@ -8,11 +8,12 @@
 # function unarchive {
 
 local remove_archive
-local success
+local result=0
 local file_name
 local file_path
 local extract_dir
 local _gzip_bin _bzip2_bin _xz_bin _zstd_bin
+setopt LOCAL_OPTIONS PIPE_FAIL
 
 if (( $# == 0 )); then
   cat >&2 <<EOF
@@ -23,6 +24,7 @@ options:
 
 Report bugs to <sorin.ionescu@gmail.com>.
 EOF
+  return 1
 fi
 
 remove_archive=1
@@ -59,11 +61,11 @@ _zstd_bin='zstd'
 while (( $# > 0 )); do
   if [[ ! -s "$1" ]]; then
     print "$0: file not valid: $1" >&2
+    result=1
     shift
     continue
   fi
 
-  success=0
   file_name="${1:t}"
   file_path="${1:A}"
   extract_dir="${file_name:r}"
@@ -89,23 +91,29 @@ while (( $# > 0 )); do
       || unar -d "$1" ;;
     (*.7z) 7za x "$1" ;;
     (*.deb)
-      mkdir -p "$extract_dir/control"
-      mkdir -p "$extract_dir/data"
-      cd "$extract_dir"; ar vx "${file_path}" > /dev/null
-      cd control; tar xvf ../control.tar.*
-      cd ../data; tar xvf ../data.tar.*
-      cd ..; rm control.tar.* data.tar.* debian-binary
-      cd ..
+      (
+        mkdir -p -- "$extract_dir"/{control,data} || exit
+        builtin cd -- "$extract_dir" || exit
+        ar vx "$file_path" > /dev/null || exit
+        (builtin cd control && tar xvf ../control.tar.*) || exit
+        (builtin cd data && tar xvf ../data.tar.*) || exit
+        rm -- control.tar.* data.tar.* debian-binary
+      )
     ;;
     (*)
       print "$0: cannot extract: $1" >&2
-      success=1
+      false
     ;;
   esac
 
-  (( success = $success > 0 ? $success : $? ))
-  (( $success == 0 )) && (( $remove_archive == 0 )) && rm "$1"
+  if (( $? != 0 )); then
+    result=1
+  elif (( remove_archive == 0 )); then
+    rm -- "$1" || result=1
+  fi
   shift
 done
+
+return $result
 
 # }
