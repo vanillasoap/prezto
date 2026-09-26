@@ -56,24 +56,70 @@ their improvements do not offset the completion cost in the table. A separate
 safe probe of installed pyenv 2.8.4 took about 50.5 ms to generate full init text
 with `--no-rehash`; it did not evaluate that text or measure rehash savings.
 
-## Next measurements and improvements
+## Interactive measurements
 
-1. Profile the user's enabled modules, first prompt, repeated prompts and directory
-   changes separately. Compare small and large repositories and a clean shell.
-   Keep startup work separate from work deferred to the first command.
+The PTY benchmark measures prompt output, command readiness, filename completion,
+and a 256-character editing batch in disposable directories:
+
+```sh
+TEST_ZSH=/bin/zsh python3 -B tests/benchmark-interactive.py --runs 10
+TEST_ZSH=/bin/zsh python3 -B tests/benchmark-interactive.py --installed --runs 10
+```
+
+The default uses isolated configuration with Pure, autosuggestions and syntax
+highlighting. `--installed` reads your actual login files and requires the Pure
+prompt. Both use disposable history, preserve HOME, and disable Pure's background
+fetches. The Git workloads contain 100 or 10,000 tracked files, with up to 100
+modified files. Completed filenames and typed buffers are checked without
+executing the completed command. Results include raw samples and nearest-rank
+p95 values. The first run is reported separately from warmed samples.
+
+These measurements include terminal I/O and ZLE, but not GUI painting or the time
+until asynchronous Git decorations settle. First-command time starts when input
+is sent after the first prompt appears. The typing result measures a batch,
+not latency for an individual physical keystroke. Ten samples provide only a
+rough view of tail latency; timing is not a CI gate.
+
+On the audited Intel Mac, September 26, 2026, Scaleway's generated completion
+script ran a second `compinit` during startup. The explicit native completion
+refresh now removes that bootstrap. Interleaved before/after/after/before runs
+of copied personal startup files, with ten warm samples per workload and
+`LC_ALL=en_US.UTF-8`, measured these median first-prompt times:
+
+| Workload | Before | After | Reduction |
+| --- | ---: | ---: | ---: |
+| Outside Git | 1136 ms | 1088 ms | 48 ms |
+| Git, 100 files | 1146 ms | 1090 ms | 56 ms |
+| Git, 10,000 files | 1151 ms | 1107 ms | 44 ms |
+
+This is about a 4–5% startup improvement for that configuration, not a universal
+Prezto speedup. The earlier non-interleaved comparison suggested a larger gain;
+the repeated comparison above is the more conservative result. After the change,
+first-command readiness was 30–40 ms, warm filename completion about 5 ms in the
+small workload and 59 ms in the large one, and the editing batch about 178–180 ms.
+These interaction timings did not materially improve with the startup change.
+
+## Further speed improvements
+
+1. Nvm's automatic version selection is the main remaining synchronous manager
+   cost in the personal profile. Evaluate it separately before changing startup.
+   Any deferred or cached alternative must preserve the default version, inherited
+   PATH, `.nvmrc` behavior, `command node`, npm, child processes and completions.
+   The current automatic Node selection remains enabled.
 2. Investigate a cheaper completion fingerprint while retaining immediate
    discovery, provider precedence, security checks, interruption recovery and
    concurrent-shell tests. Compare warm startup and rebuild cost before accepting
    a change; do not remove correctness checks to meet a timing target.
-3. Measure actual manager initialization before adding lazy loading or init-text
-   caches. Any cache must handle manager upgrades, plugins, PATH changes and
-   interpreter selection. Avoid a generic deferral framework without evidence.
+3. Profile filename completion in large directories separately from prompt work.
+   The 10,000-file workload shows that warm completion cost grows even when
+   startup is unchanged. Preserve case-insensitive and approximate matching
+   behavior before considering changes to completion policy.
 4. Measure Pure and Sorin's repeated prompt work in large repositories. Preserve
    updates after commits, branch changes and edits made without changing directory.
    A cache keyed only by the current directory is insufficient.
-5. If trialling direnv, measure empty directories, project entry/exit, an unchanged
-   environment and watched-file reloads. Use one environment-switching owner for
-   each language. Direnv has not been installed or enabled by these changes.
+5. Keep GPG's TTY refresh when GPG owns the SSH socket: different terminals share
+   the agent, and SSH does not pass its current TTY. Ordinary GPG use now relies
+   on native agent startup and does not install that per-command hook.
 
 Behavioral and syntax checks run in CI. Timing thresholds are intentionally
 excluded from shared runners; compare benchmark distributions on the same host.

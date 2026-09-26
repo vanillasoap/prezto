@@ -62,6 +62,12 @@ macOS may request Automation permission when first called. Terminal.app's tab
 shortcut additionally needs Accessibility permission; it has no independent
 split-session API. iTerm2 and Ghostty use their scripting dictionaries.
 
+Ghostty tabs need a window configuration that supports native tabs. In
+particular, `macos-titlebar-style = hidden` prevents ordinary tab grouping;
+Ghostty 1.3.1's native tab command can fail or create a separate window in this
+configuration. Use `split_tab` or `vsplit_tab`, or select a visible titlebar in
+Ghostty if tabs are wanted. Prezto does not change terminal appearance settings.
+
 ## Authors
 
 _The authors of this module should be contacted via the [issue tracker][5]._
