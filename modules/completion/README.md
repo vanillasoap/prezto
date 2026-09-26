@@ -15,7 +15,7 @@ directories. Concurrent shells initialize without writing the cache
 when another shell is rebuilding it, and interrupted builds do not leave locks
 that need manual removal.
 
-For native pnpm, Fly, and pip completions, see [tool completions][4]. The
+For native pnpm and pip completions, see [tool completions][4]. The
 `prezto-completions-update` command generates their scripts on demand; tools
 are not invoked to generate completion scripts during shell startup.
 

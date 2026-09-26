@@ -4,16 +4,16 @@
   umask 077
 
   if [[ $1 == --help ]]; then
-    print 'usage: prezto-completions-update [pnpm fly pip ...]'
+    print 'usage: prezto-completions-update [pnpm pip ...]'
     return 0
   fi
-  (( $# )) || set -- pnpm fly pip
+  (( $# )) || set -- pnpm pip
 
   local program destination temporary script result=0
   local -a arguments
   for program in "$@"; do
     case $program in
-      (pnpm|fly|pip) ;;
+      (pnpm|pip) ;;
       (*)
         print -u2 -- "prezto-completions-update: unsupported program: $program"
         return 1
@@ -33,7 +33,7 @@
       continue
     fi
     case $program in
-      (pnpm|fly) arguments=(completion zsh) ;;
+      (pnpm) arguments=(completion zsh) ;;
       (pip) arguments=(completion --zsh) ;;
     esac
     temporary="$(command mktemp "$destination/.$program.XXXXXXXX")" || return

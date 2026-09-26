@@ -15,13 +15,13 @@ autoload -Uz prezto-completions-update
 prezto-completions-update ''' + arguments)
 
     def test_generates_native_scripts_without_evaluating_them(self):
-        for program in ("pnpm", "fly", "pip"):
+        for program in ("pnpm", "pip"):
             self.stub(program, '''
 printf '%s\\n' "$*" > "$TMPDIR/$(basename "$0").arguments"
 printf 'touch "$TMPDIR/should-not-execute"\\n'
 ''')
         self.success(self.update())
-        for program in ("pnpm", "fly", "pip"):
+        for program in ("pnpm", "pip"):
             expected = "completion --zsh\n" if program == "pip" else "completion zsh\n"
             self.assertEqual((self.root / (program + ".arguments")).read_text(), expected)
             script = self.destination / (program + ".zsh")
@@ -77,15 +77,15 @@ __pip
 
     def test_partial_failure_does_not_block_other_tools_or_change_caller(self):
         self.stub("pnpm", "exit 1")
-        self.stub("fly", "printf '# native fly completion\\n'")
+        self.stub("pip", "printf '# native pip completion\\n'")
         result = self.zsh('''
 fpath=("$PREZTO_TEST_REPO/modules/completion/functions" $fpath)
 autoload -Uz prezto-completions-update
 before_pwd=$PWD
 before_umask=$(umask)
-prezto-completions-update pnpm fly && exit 1
+prezto-completions-update pnpm pip && exit 1
 [[ $PWD == $before_pwd && $(umask) == $before_umask ]]
 ''')
         self.success(result)
-        self.assertEqual((self.destination / "fly.zsh").read_text(), "# native fly completion\n")
+        self.assertEqual((self.destination / "pip.zsh").read_text(), "# native pip completion\n")
         self.assertFalse((self.destination / "pnpm.zsh").exists())

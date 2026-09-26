@@ -3,13 +3,13 @@
 The completion module loads Zsh and Homebrew completion providers. Check those
 before adding another provider for the same command.
 
-For pnpm, Fly, and pip, generate completion scripts using the installed tools:
+For pnpm and pip, generate completion scripts using the installed tools:
 
 ```zsh
 prezto-completions-update
 ```
 
-This defaults to all three tools. To update only selected tools, pass their names:
+This defaults to both tools. To update only selected tools, pass their names:
 
 ```zsh
 prezto-completions-update pnpm pip
@@ -29,7 +29,7 @@ Add this block after Prezto initialization in your personal shell configuration
 (for example, `.zshrc.local` if your `.zshrc` sources it):
 
 ```zsh
-for _prezto_program in pnpm fly pip; do
+for _prezto_program in pnpm pip; do
   _prezto_completion="${XDG_DATA_HOME:-$HOME/.local/share}/prezto/completions/$_prezto_program.zsh"
   if (( $+commands[$_prezto_program] )) && [[ -r $_prezto_completion ]]; then
     source "$_prezto_completion"
@@ -50,5 +50,4 @@ For example, Docker Desktop's `~/.docker/completions` belongs there. Prezto owns
 can discard their registrations.
 
 Sources: [pnpm completion](https://pnpm.io/completion),
-[pip command completion](https://pip.pypa.io/en/stable/user_guide/#command-completion),
-and `fly completion --help` from the installed Fly CLI.
+and [pip command completion](https://pip.pypa.io/en/stable/user_guide/#command-completion).
