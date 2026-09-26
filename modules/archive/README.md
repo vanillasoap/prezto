@@ -20,7 +20,8 @@ installed:
 - _.tar.gz_, _.tgz_ require `tar` (optionally `pigz`).
 - _.tar.bz2_, _.tbz_ require `tar` (optionally `pbzip2`).
 - _.tar.xz_, _.txz_ require `tar` with _xz_ support.
-- _.tar.zma_, _.tlz_ require `tar` with _lzma_ support.
+- _.tar.lzma_, _.tlz_ require `tar` with _lzma_ support (or `lzcat`).
+  Listing and extraction also accept the legacy _.tar.zma_ spelling.
 - _.tar_ requires `tar`.
 - _.gz_ requires `gunzip`.
 - _.bz2_ requires `bunzip2`.

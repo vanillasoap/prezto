@@ -53,6 +53,27 @@ return $result
                 result = self.zsh(LOAD + f"lsarchive {name}")
                 self.assertNotEqual(result.returncode, 0)
 
+    def test_lzma_tar_suffixes_list_and_extract_the_tar_payload(self):
+        tar = shlex.quote(shutil.which("tar"))
+        self.stub("tar", f'[ "$1" = --lzma ] && exit 1\nexec {tar} "$@"')
+        self.stub("lzcat", 'exec cat "$@"')
+        for suffix in ("tar.lzma", "tar.zma", "tlz"):
+            with self.subTest(suffix=suffix):
+                self.tar_fixture("sample." + suffix)
+                directory = self.root / suffix
+                directory.mkdir()
+                self.assertIn("marker.txt", self.success(self.zsh(
+                    LOAD + "lsarchive ../sample." + suffix, cwd=directory)))
+                self.assertEqual(list(directory.iterdir()), [])
+                self.success(self.zsh(LOAD + "unarchive ../sample." + suffix, cwd=directory))
+                self.assertEqual((directory / "marker.txt").read_text(), "payload")
+
+    def test_unix_compress_suffix_is_recognized(self):
+        (self.root / "sample.Z").write_text("compressed payload")
+        self.stub("uncompress", 'printf "%s\\n" "$@" > uncompress-arguments')
+        self.success(self.zsh(LOAD + "unarchive sample.Z"))
+        self.assertEqual((self.root / "uncompress-arguments").read_text(), "sample.Z\n")
+
     def test_archive_preserves_operand_boundaries_and_output_directory(self):
         (self.root / "dir with space").mkdir()
         (self.root / "dir with space/data").write_text("payload")

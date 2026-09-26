@@ -27,7 +27,7 @@ while getopts ':gimsx' opt; do
     (g) modifiers="${modifiers}g" ;;
     (i) modifiers="${modifiers}i" ;;
     (m) modifiers="${modifiers}m" ;;
-    (s) modifiers="${sodifiers}s" ;;
+    (s) modifiers="${modifiers}s" ;;
     (x) modifiers="${modifiers}x" ;;
     (:)
       print "$0: option requires an argument: $OPTARG" >&2

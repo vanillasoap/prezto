@@ -9,10 +9,10 @@ setopt LOCAL_OPTIONS EXTENDED_GLOB
 
 local file
 local -a files=()
-for file in $@; do
-  if [[ -e $file ]]; then
+for file in "$@"; do
+  if [[ -e $file || -L $file ]]; then
     # ':a' gets the full path (do not use ':A', which would resolve symlinks)
-    files+=("the POSIX file \"${file:a}\"")
+    files+=("${file:a}")
   else
     print "trash: No such file or directory '$file'." >&2
     return 1
@@ -24,8 +24,15 @@ if (( $#files == 0 )); then
   return 64  # Match rm's return code.
 fi
 
-# Join file list with commas, and tell Finder to trash that list.
-local file_list="${(pj., .)files}"
-osascript 2>&1 > /dev/null -e "tell app \"Finder\" to move { "${file_list}" } to trash"
+# Pass paths as arguments so filenames cannot become AppleScript source.
+osascript - "${files[@]}" > /dev/null <<'APPLESCRIPT'
+on run arguments
+  set trashItems to {}
+  repeat with filePath in arguments
+    set end of trashItems to POSIX file (contents of filePath)
+  end repeat
+  tell application "Finder" to move trashItems to trash
+end run
+APPLESCRIPT
 
 # }
