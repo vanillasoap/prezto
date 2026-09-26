@@ -23,6 +23,20 @@ of the preferred frontend.
 zstyle ':prezto:module:pacman' frontend '<frontend>'
 ```
 
+For example, select an installed [paru][6] or [yay][7] executable:
+
+```sh
+zstyle ':prezto:module:pacman' frontend 'paru'
+```
+
+The module calls the selected helper directly, allowing it to manage privilege
+escalation. With no setting, an unavailable helper, or an explicit `pacman`
+setting, mutation commands use `sudo pacman`. Queries do not use `sudo`.
+Normal package-manager confirmation prompts remain enabled.
+
+Load `pacman` before `completion` in the Arch host's module list. Pacman and
+helper packages provide their own Zsh completions; no Oh My Zsh plugin is needed.
+
 ## Aliases
 
 ### Pacman
@@ -30,20 +44,35 @@ zstyle ':prezto:module:pacman' frontend '<frontend>'
 - `pac` is short for `pacman`.
 - `paci` installs packages from repositories.
 - `pacI` installs packages from files.
-- `pacx` removes packages and unneeded dependencies.
+- `pacx` removes packages.
 - `pacX` removes packages, their configuration, and unneeded dependencies.
 - `pacq` displays information about a package from the repositories.
 - `pacQ` displays information about a package from the local database.
 - `pacs` searches for packages in the repositories.
 - `pacS` searches for packages in the local database.
-- `pacu` synchronizes the local package and Arch Build System (requires `abs`)
-  databases against the repositories.
+- `pacown` identifies the installed package that owns a file.
+- `pacls` lists the files installed by a package.
+- `pacfiles` searches repository package contents, including uninstalled packages.
+- `pacfileupg` refreshes the repository file database used by `pacfiles`.
+- `pacu` refreshes package metadata only; it does not upgrade installed packages.
 - `pacU` synchronizes the local package database against the repositories then
   upgrades outdated packages.
 - `pacman-list-orphans` lists orphan packages.
 - `pacman-remove-orphans` removes orphan packages.
 
-### Frontends
+Prefer `pacU` for routine updates, keeping metadata refresh and system upgrade
+together. The old implicit `asp update` step has been removed: Arch [replaced
+asp with pkgctl][8]. To obtain official package sources, use `pkgctl repo clone
+<package>` separately.
+
+Examples:
+
+```sh
+pacown /usr/bin/zsh
+pacls zsh
+pacfileupg
+pacfiles bin/zsh
+```
 
 ## Functions
 
@@ -63,3 +92,6 @@ _The authors of this module should be contacted via the [issue tracker][5]._
 [3]: https://wiki.archlinux.org/title/Arch_User_Repository#Installing_and_upgrading_packages
 [4]: https://github.com/AladW/aurutils
 [5]: https://github.com/sorin-ionescu/prezto/issues
+[6]: https://github.com/Morganamilo/paru
+[7]: https://github.com/Jguer/yay
+[8]: https://archlinux.org/news/git-migration-completed/

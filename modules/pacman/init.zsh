@@ -20,8 +20,10 @@ fi
 
 # Get the Pacman frontend.
 zstyle -s ':prezto:module:pacman' frontend '_pacman_frontend'
+_pacman_sudo=''
 
-if (( $+commands[$_pacman_frontend] )); then
+if [[ -n $_pacman_frontend && $_pacman_frontend != pacman ]] \
+    && (( $+commands[$_pacman_frontend] )); then
   alias pacman="$_pacman_frontend"
 else
   _pacman_frontend='pacman'
@@ -59,19 +61,20 @@ alias pacs="${_pacman_frontend} --sync --search"
 # Searches for packages in the local database.
 alias pacS="${_pacman_frontend} --query --search"
 
+# Queries do not need root privileges, including searches in the file database.
+alias pacown="${_pacman_frontend} --query --owns"
+alias pacls="${_pacman_frontend} --query --list"
+alias pacfiles="${_pacman_frontend} --files"
+alias pacfileupg="${_pacman_sudo}${_pacman_frontend} --files --refresh"
+
 # Lists orphan packages.
-alias pacman-list-orphans="${_pacman_sudo}${_pacman_frontend} --query --deps --unrequired"
+alias pacman-list-orphans="${_pacman_frontend} --query --deps --unrequired"
 
 # Removes orphan packages.
 alias pacman-remove-orphans="${_pacman_sudo}${_pacman_frontend} --remove --recursive \$(${_pacman_frontend} --quiet --query --deps --unrequired)"
 
-# Synchronizes the local package and Arch Build System databases against the
-# repositories using the asp tool.
-if (( $+commands[asp] )); then
-  alias pacu="${_pacman_sudo}${_pacman_frontend} --sync --refresh && sudo asp update"
-else
-  alias pacu="${_pacman_sudo}${_pacman_frontend} --sync --refresh"
-fi
+# Legacy metadata-only refresh. Prefer pacU for a full system update.
+alias pacu="${_pacman_sudo}${_pacman_frontend} --sync --refresh"
 
 # Synchronizes the local package database against the repositories then
 # upgrades outdated packages.
