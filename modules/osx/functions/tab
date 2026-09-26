@@ -77,14 +77,25 @@ APPLESCRIPT
 on run arguments
   tell application "Terminal"
     activate
-    set targetWindow to front window
-    set previousCount to count of tabs of targetWindow
+    -- macOS can expose the new native tab under a different window ID.
+    -- Identify it by its new TTY instead of watching one window's tab count.
+    set previousTTYs to {}
+    repeat with existingWindow in windows
+      repeat with existingTab in tabs of existingWindow
+        set end of previousTTYs to tty of existingTab
+      end repeat
+    end repeat
   end tell
-  tell application "System Events" to tell process "Terminal" to keystroke "t" using command down
+  tell application "System Events" to tell process "Terminal"
+    set frontmost to true
+    keystroke "t" using command down
+  end tell
   repeat 100 times
     tell application "Terminal"
-      if (count of tabs of targetWindow) > previousCount then
-        do script (item 3 of arguments) in selected tab of targetWindow
+      set targetTab to selected tab of front window
+      set targetTTY to tty of targetTab
+      if targetTTY is not "" and targetTTY is not in previousTTYs then
+        do script (item 3 of arguments) in targetTab
         return
       end if
     end tell
