@@ -1,63 +1,52 @@
-#
-# Provides for an easier use of SSH by setting up ssh-agent.
-#
-# Authors:
-#   Sorin Ionescu <sorin.ionescu@gmail.com>
-#
+# Reuse a supplied SSH agent, or share one local agent between Prezto shells.
+() {
+  emulate -L zsh
+  local socket="${XDG_CACHE_HOME:-$HOME/.cache}/prezto/ssh/agent.sock"
+  local identity
+  local -a identities
 
-# Return if requirements are not found.
-if (( ! $+commands[ssh-agent] )); then
-  return 1
-fi
-
-# Set the path to the SSH directory.
-_ssh_dir="$HOME/.ssh"
-
-# Set the path to the environment file if not set by another module.
-_ssh_agent_env="${_ssh_agent_env:-${XDG_CACHE_HOME:-$HOME/.cache}/prezto/ssh-agent.env}"
-
-# Set the path to the persistent authentication socket if not set by another module.
-_ssh_agent_sock="${_ssh_agent_sock:-${XDG_CACHE_HOME:-$HOME/.cache}/prezto/ssh-agent.sock}"
-
-# Start ssh-agent if not started.
-if [[ ! -S "$SSH_AUTH_SOCK" ]]; then
-  # Export environment variables.
-  source "$_ssh_agent_env" 2> /dev/null
-
-  # Start ssh-agent if not started.
-  if ! ps -U "$LOGNAME" -o pid,ucomm | grep -q -- "${SSH_AGENT_PID:--1} ssh-agent"; then
-    mkdir -p "$_ssh_agent_env:h"
-    eval "$(print -l "${(@)${(f)"$(ssh-agent)"}:#echo *}" | tee "$_ssh_agent_env")"
+  if [[ -z $SSH_AUTH_SOCK || $SSH_AUTH_SOCK == $socket ]]; then
+    (( $+commands[ssh-agent] && $+commands[ssh-add] )) || return 1
+    # A kernel lock serializes startup and disappears if a shell is interrupted.
+    # No executable environment cache or process-name/PID matching is needed.
+    (
+      umask 077
+      command mkdir -p -- "$socket:h" || exit
+      [[ -O $socket:h && ! -L $socket:h ]] || exit 1
+      command chmod -- 700 "$socket:h" || exit
+      zmodload -F zsh/system b:zsystem || exit
+      : >> "$socket.lock" || exit
+      local lock_fd
+      zsystem flock -t 5 -f lock_fd "$socket.lock" || exit
+      export SSH_AUTH_SOCK=$socket
+      command ssh-add -l > /dev/null 2>&1
+      local agent_status=$?
+      if (( agent_status == 2 )); then
+        # Remove only our stale endpoint; preserve any unexpected regular file.
+        [[ ! -e $socket || -S $socket || -L $socket ]] || exit 1
+        command rm -f -- "$socket" || exit
+        command ssh-agent -s -a "$socket" > /dev/null || exit
+        [[ -S $socket ]] || exit 1
+      elif (( agent_status != 0 && agent_status != 1 )); then
+        exit 1
+      fi
+    ) || return 1
+    export SSH_AUTH_SOCK=$socket
+    unset SSH_AGENT_PID
   fi
-fi
 
-# Create a persistent SSH authentication socket.
-if [[ -S "$SSH_AUTH_SOCK" && "$SSH_AUTH_SOCK" != "$_ssh_agent_sock" ]]; then
-  mkdir -p "$_ssh_agent_sock:h"
-  ln -sf "$SSH_AUTH_SOCK" "$_ssh_agent_sock.$$"
-  mv -f "$_ssh_agent_sock.$$" "$_ssh_agent_sock"
-  export SSH_AUTH_SOCK="$_ssh_agent_sock"
-fi
-
-# Load identities.
-if [[ ${(@M)${(f)"$(ssh-add -l 2>&1)"}:#The agent has no identities*} ]]; then
-  zstyle -a ':prezto:module:ssh:load' identities '_ssh_identities'
-  # ssh-add has strange requirements for running SSH_ASKPASS, so we duplicate
-  # them here. Essentially, if the other requirements are met, we redirect stdin
-  # from /dev/null in order to meet the final requirement.
-  #
-  # From ssh-add(1):
-  # If ssh-add needs a passphrase, it will read the passphrase from the current
-  # terminal if it was run from a terminal. If ssh-add does not have a terminal
-  # associated with it but DISPLAY and SSH_ASKPASS are set, it will execute the
-  # program specified by SSH_ASKPASS and open an X11 window to read the
-  # passphrase.
-  if [[ -n "$DISPLAY" && -x "$SSH_ASKPASS" ]]; then
-    ssh-add ${_ssh_identities:+$_ssh_dir/${^~_ssh_identities[@]}} < /dev/null 2> /dev/null
-  else
-    ssh-add ${_ssh_identities:+$_ssh_dir/${^~_ssh_identities[@]}} 2> /dev/null
+  # An external agent (forwarding, keychain, 1Password, GPG) owns its identities.
+  # Add keys only when the user has explicitly requested them, with no globbing.
+  if zstyle -a ':prezto:module:ssh:load' identities identities && (( $#identities )); then
+    (( $+commands[ssh-add] )) || return 1
+    for identity in "$identities[@]"; do
+      [[ $identity == /* ]] || identity="$HOME/.ssh/$identity"
+      if [[ -n $DISPLAY && -x $SSH_ASKPASS ]]; then
+        command ssh-add "$identity" < /dev/null || return
+      else
+        command ssh-add "$identity" || return
+      fi
+    done
   fi
-fi
-
-# Clean up.
-unset _ssh_{dir,identities} _ssh_agent_{env,sock}
+  return 0
+}
