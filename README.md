@@ -9,7 +9,10 @@ and prompt themes.
 ### Manual
 
 Prezto will work with any recent release of Zsh, but the minimum required
-version is **4.3.11**.
+version is **5.3.1**. The full regression suite tests this baseline on Linux,
+alongside current system Zsh on Linux and macOS. Use a current Zsh release when
+available; the former 4.3.11 minimum no longer passes the framework's syntax and
+behavior checks.
 
 01. Launch Zsh:
 

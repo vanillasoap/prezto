@@ -6,7 +6,8 @@ Run the repository's behavioral regression tests from its root:
 python3 -B -m unittest discover -s tests -v
 ```
 
-The same suite runs on macOS and Linux in GitHub Actions. It includes a syntax
+The same suite runs on macOS and Linux in GitHub Actions, plus a Linux build of
+the minimum supported Zsh 5.3.1. It includes a syntax
 check of repository-owned shell files, excluding external submodule source.
 To measure isolated startup time separately, run `python3 -B tests/benchmark.py`;
 see [the performance guide](../docs/performance.md) for scope and limitations.

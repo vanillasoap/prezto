@@ -33,3 +33,30 @@ jobs:
         env:
           TEST_ZSH: /bin/zsh
         run: python3 -B -m unittest discover -s tests -v
+
+  minimum-zsh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          submodules: recursive
+          persist-credentials: false
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.13'
+      - name: Build the minimum supported Zsh
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libncurses-dev
+          cd "$RUNNER_TEMP"
+          curl --fail --location --retry 3 https://www.zsh.org/pub/old/zsh-5.3.1.tar.xz -o zsh-5.3.1.tar.xz
+          echo 'fc886cb2ade032d006da8322c09a7e92b2309177811428b121192d44832920da  zsh-5.3.1.tar.xz' | sha256sum --check
+          tar -xf zsh-5.3.1.tar.xz
+          cd zsh-5.3.1
+          ./configure --prefix="$RUNNER_TEMP/zsh-minimum" --enable-multibyte --with-tcsetpgrp \
+            CFLAGS='-O2 -Wno-implicit-function-declaration -Wno-int-conversion -Wno-incompatible-pointer-types'
+          make -j2
+          make install.bin install.modules install.fns
+      - name: Test the minimum supported Zsh
+        run: TEST_ZSH="$RUNNER_TEMP/zsh-minimum/bin/zsh" python3 -B -m unittest discover -s tests -v
