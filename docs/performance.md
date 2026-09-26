@@ -99,10 +99,46 @@ first-command readiness was 30–40 ms, warm filename completion about 5 ms in t
 small workload and 59 ms in the large one, and the editing batch about 178–180 ms.
 These interaction timings did not materially improve with the startup change.
 
+## Compiling nvm's startup script
+
+Zsh can read a compiled copy of nvm's script while keeping its normal version
+selection. In a separate September 26 comparison using nvm 0.40.8 and Zsh 5.9,
+compilation reduced median first-prompt time by 89–134 ms (about 5–8%). The
+before/after/after/before sequence used copied personal startup files and ten
+warm samples per workload:
+
+| Workload | Source script | Compiled script | Reduction |
+| --- | ---: | ---: | ---: |
+| Outside Git | 1725.4 ms | 1591.5 ms | 133.9 ms |
+| Git, 100 files | 1703.1 ms | 1613.8 ms | 89.3 ms |
+| Git, 10,000 files | 1740.3 ms | 1610.8 ms | 129.5 ms |
+
+These are paired results from a later session; compare within this table, not
+against the earlier absolute timings. First-command, completion and editing
+timings were materially unchanged. This is a local nvm optimization, not a
+change to Prezto's module defaults.
+
+After installing or updating nvm, run this once in the Zsh version you normally
+use, with `NVM_DIR` set to your nvm installation:
+
+```zsh
+(umask 077; zcompile -UR -- "$NVM_DIR/nvm.sh")
+```
+
+Leave the existing `source "$NVM_DIR/nvm.sh"` line in place. Only parsing is
+cached: nvm still selects the version, updates PATH and checks npm configuration
+on every startup. The generated `nvm.sh.zwc` file is local and disposable; remove
+it to undo the optimization. Zsh uses the source when it is newer than the
+compiled file, and another Zsh version can fall back to the source. Regenerate
+the cache after nvm updates to retain the speed benefit. If restoring an older
+source file with its original timestamp, remove or regenerate the cache too.
+See [Zsh's source and zcompile documentation][zcompile].
+
 ## Further speed improvements
 
 1. Nvm's automatic version selection is the main remaining synchronous manager
-   cost in the personal profile. Evaluate it separately before changing startup.
+   cost in the personal profile, even with its script compiled. Evaluate it
+   separately before changing startup.
    Any deferred or cached alternative must preserve the default version, inherited
    PATH, `.nvmrc` behavior, `command node`, npm, child processes and completions.
    The current automatic Node selection remains enabled.
@@ -123,3 +159,5 @@ These interaction timings did not materially improve with the startup change.
 
 Behavioral and syntax checks run in CI. Timing thresholds are intentionally
 excluded from shared runners; compare benchmark distributions on the same host.
+
+[zcompile]: https://zsh.sourceforge.io/Doc/Release/Shell-Builtin-Commands.html
