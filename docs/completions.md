@@ -15,10 +15,10 @@ This defaults to both tools. To update only selected tools, pass their names:
 prezto-completions-update pnpm pip
 ```
 
-Scaleway CLI is also supported when requested explicitly:
+npm and Scaleway CLI are also supported when requested explicitly:
 
 ```zsh
-prezto-completions-update scw
+prezto-completions-update npm scw
 ```
 
 Scripts are stored in `${XDG_DATA_HOME:-$HOME/.local/share}/prezto/completions`.
@@ -32,12 +32,14 @@ beginning with `--` are passed as data to Zsh's `compadd`, so pip options such a
 `--outdated` complete correctly.
 Scaleway's standalone `compinit` bootstrap is removed, retaining its native
 completion function without initializing the completion system a second time.
+The npm script supports command and project-script completion. Its upstream
+completion command does not provide workspace-aware completion.
 
 Add this block after Prezto initialization in your personal shell configuration
 (for example, `.zshrc.local` if your `.zshrc` sources it):
 
 ```zsh
-for _prezto_program in pnpm pip scw; do
+for _prezto_program in npm pnpm pip scw; do
   _prezto_completion="${XDG_DATA_HOME:-$HOME/.local/share}/prezto/completions/$_prezto_program.zsh"
   if (( $+commands[$_prezto_program] )) && [[ -r $_prezto_completion ]]; then
     source "$_prezto_completion"
@@ -47,8 +49,9 @@ unset _prezto_program _prezto_completion
 ```
 
 Only the saved scripts load at startup. Completion itself calls the selected
-tool when you press Tab. Run `prezto-completions-update` after updating these
-tools, then open a new shell. These explicitly installed scripts take precedence
+tool when you press Tab. After updating a tool, refresh its saved script, for
+example `prezto-completions-update npm`, then open a new shell. The command's
+default remains pnpm and pip. These explicitly installed scripts take precedence
 over other registrations for their commands; remove the corresponding script if
 you switch to another provider.
 
@@ -57,6 +60,7 @@ For example, Docker Desktop's `~/.docker/completions` belongs there. Prezto owns
 `compinit`; do not run it again after loading the native scripts, because that
 can discard their registrations.
 
-Sources: [pnpm completion](https://pnpm.io/completion),
+Sources: [npm completion](https://docs.npmjs.com/cli/v11/commands/npm-completion/),
+[pnpm completion](https://pnpm.io/completion),
 [pip command completion](https://pip.pypa.io/en/stable/user_guide/#command-completion),
 and [Scaleway CLI setup](https://www.scaleway.com/en/docs/instances/api-cli/creating-managing-instances-with-cliv2/).

@@ -4,7 +4,7 @@
   umask 077
 
   if [[ $1 == --help ]]; then
-    print 'usage: prezto-completions-update [pnpm pip scw ...] (default: pnpm pip)'
+    print 'usage: prezto-completions-update [npm pnpm pip scw ...] (default: pnpm pip)'
     return 0
   fi
   (( $# )) || set -- pnpm pip
@@ -13,7 +13,7 @@
   local -a arguments
   for program in "$@"; do
     case $program in
-      (pnpm|pip|scw) ;;
+      (npm|pnpm|pip|scw) ;;
       (*)
         print -u2 -- "prezto-completions-update: unsupported program: $program"
         return 1
@@ -33,6 +33,7 @@
       continue
     fi
     case $program in
+      (npm) arguments=(completion) ;;
       (pnpm) arguments=(completion zsh) ;;
       (pip) arguments=(completion --zsh) ;;
       (scw) arguments=(autocomplete script shell=zsh) ;;

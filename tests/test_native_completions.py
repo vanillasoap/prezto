@@ -69,6 +69,24 @@ __pip
         self.assertNotEqual(self.update("pnpm").returncode, 0)
         self.assertEqual(saved.read_text(), "# previous completion\n")
 
+    def test_npm_generates_and_registers_without_running_completion_at_startup(self):
+        self.stub("npm", '''
+printf '%s\\n' "$*" >> "$TMPDIR/npm.arguments"
+cat <<'SCRIPT'
+_npm_completion() { compadd -- $(npm completion -- "${words[@]}"); }
+compdef _npm_completion npm
+SCRIPT
+''')
+        self.success(self.update("npm"))
+        self.assertEqual((self.root / "npm.arguments").read_text(), "completion\n")
+        result = self.zsh('''
+compdef() { print -r -- "$*"; }
+source "$XDG_DATA_HOME/prezto/completions/npm.zsh"
+''')
+        self.assertEqual(self.success(result), "_npm_completion npm\n")
+        self.assertEqual((self.root / "npm.arguments").read_text(), "completion\n")
+        self.assertEqual((self.destination / "npm.zsh").stat().st_mode & 0o777, 0o600)
+
     def test_scaleway_keeps_registration_without_reinitializing_completion(self):
         self.stub("scw", '''
 printf '%s\\n' "$*" > "$TMPDIR/scw.arguments"
