@@ -13,6 +13,16 @@ pmodload 'editor'
 # submodule.
 if (( ! $+commands[fasd] )); then
   source "${0:h}/external/fasd" || return 1
+
+  # The bundled version loses its first update when awk reads a missing file.
+  # Initialize after fasd has resolved its configuration; never truncate a
+  # database another shell may have created in the meantime.
+  if [[ -z $_FASD_RO && ! -e $_FASD_DATA && ! -L $_FASD_DATA ]]; then
+    (
+      umask 077
+      command mkdir -p -- "${_FASD_DATA:h}" && : >>| "$_FASD_DATA"
+    ) || return 1
+  fi
 fi
 
 #

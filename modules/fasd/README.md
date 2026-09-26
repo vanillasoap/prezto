@@ -17,6 +17,11 @@ been disabled.
 manually install `fasd`. If a manual installation is found, it will be used
 instead of the bundled version.
 
+For the bundled version, Prezto creates a missing database and its parent
+directory before tracking starts, so the first entry is retained. Existing
+databases and fasd's read-only mode (`_FASD_RO`) are preserved. Separately
+installed versions manage their own database.
+
 ## Aliases
 
 Aliases are enabled by default. To disable them, add the following to
