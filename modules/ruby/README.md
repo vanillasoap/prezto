@@ -73,7 +73,9 @@ zstyle ':prezto:module:ruby:alias' skip 'yes'
 - `rbb` manages ruby dependencies (`bundle`).
 - `rbbc` cleans up unused gems in your bundler directory.
 - `rbbe` executes a script in the context of the current bundle.
-- `rbbi` installs the gems specified in the `Gemfile` in `vendor/bundle`.
+- `rbbi` sets the project's Bundler path to `vendor/bundle`, then installs
+  the gems specified in the `Gemfile`. It uses `bundle config set --local`,
+  which also works with Bundler 4.
 - `rbbI` installs the following:
   - gems specified in the `Gemfile` in `vendor/bundle`.
   - packages the gems into `vendor/cache`.

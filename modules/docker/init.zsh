@@ -20,7 +20,9 @@ function dkme {
     return 1
   fi
 
-  eval $(docker-machine env $1)
+  local machine_env
+  machine_env="$(docker-machine env "$@")" || return
+  eval "$machine_env"
 }
 
 # Set Docker Machine default machine
@@ -29,28 +31,24 @@ function dkmd {
     return 1
   fi
 
-  pushd ~/.docker/machine/machines
-
-  if [[ ! -d $1 ]]; then
-    echo "Docker machine '$1' does not exists. Abort."
-    popd
+  if (( $# != 1 )); then
+    print -u2 -- 'usage: dkmd <machine>'
     return 1
   fi
 
-  if [[ -L default ]]; then
-    eval $(rm -f default)
-  elif [[ -d default ]]; then
-    echo "A default machine already exists. Abort."
-    popd
-    return 1
-  elif [[ -e default ]]; then
-    echo "A file named 'default' already exists. Abort."
-    popd
-    return 1
-  fi
-
-  eval $(ln -s $1 default)
-  popd
+  (
+    builtin cd -q -- "${MACHINE_STORAGE_PATH:-$HOME/.docker/machine}/machines" || exit
+    if [[ ! -d $1 ]]; then
+      print -u2 -- "Docker machine '$1' does not exist."
+      exit 1
+    fi
+    [[ $1 == default ]] && exit 0
+    if [[ -e default && ! -L default ]]; then
+      print -u2 -- "A file or directory named 'default' already exists."
+      exit 1
+    fi
+    ln -sfn -- "$1" default
+  )
 }
 
 # Source module files.

@@ -20,6 +20,11 @@ _`${ZDOTDIR:-$HOME}/.zpreztorc`_.
 zstyle ':prezto:module:python' conda-init 'on'
 ```
 
+This evaluates `conda shell.zsh hook` when `conda` is on PATH. It sets
+`CONDA_CHANGEPS1=false` for the shell so that Prezto owns the prompt, without
+rewriting Conda's configuration. Base-environment activation follows your Conda
+settings. An unset or disabled style does not initialize Conda.
+
 Caution: using conda and virtualenvwrapper at the same time may cause conflicts.
 
 ## Local Python Installation

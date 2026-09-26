@@ -45,7 +45,7 @@ fi
 # Variables
 #
 
-N_PREFIX="${XDG_CONFIG_HOME:-$HOME/.config}/n"  # The path to 'n' cache.
+export N_PREFIX="${N_PREFIX:-${XDG_CONFIG_HOME:-$HOME/.config}/n}"
 
 #
 # Aliases

@@ -158,16 +158,13 @@ if (( $+VIRTUALENVWRAPPER_VIRTUALENV || $+commands[virtualenv] )) \
 fi
 
 # Load conda into the shell session, if requested.
-zstyle -T ':prezto:module:python' conda-init
-if (( $? && $+commands[conda] )); then
-  if (( $(conda ..changeps1) )); then
-    echo "To make sure Conda doesn't change your prompt (should do that in the prompt module) run:\n  conda config --set changeps1 false"
-    # TODO:
-    # We could just run this ourselves. In an exit hook
-    # (add zsh-hook zshexit [(anonymous) function]) we could then set it back
-    # to the way it was before we changed it. However, I'm not sure if this is
-    # exception safe, so left it like this for now.
-  fi
+if zstyle -t ':prezto:module:python' conda-init && (( $+commands[conda] )); then
+  local conda_hook
+  conda_hook="$(CONDA_CHANGEPS1=false conda shell.zsh hook)" || return
+  # The prompt module owns the prompt; do not change the user's Conda config.
+  export CONDA_CHANGEPS1=false
+  eval "$conda_hook" || return
+  unset conda_hook
 fi
 
 #

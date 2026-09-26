@@ -134,8 +134,9 @@ Defines [Docker][1] aliases and functions.
 - `dkm` is short for `docker-machine`
 - `dkma` Get or set the active machine
 - `dkmcp` Copy files between machines
-- `dkmd` Set up the default machine ; alowing you to use `dkme` without
-  arguments
+- `dkmd` Select the default machine without changing the working directory.
+  Uses `MACHINE_STORAGE_PATH` when set, otherwise `~/.docker/machine`.
+  This allows `dkme` without arguments.
 - `dkme` Set up the environment for the Docker client (eg: `dkme staging` to
   toggle to staging)
 - `dkmin` Inspect information about a machine
@@ -157,7 +158,7 @@ Defines [Docker][1] aliases and functions.
 
 ### Docker Compose
 
-- `dkc` is short for `docker-compose`
+- `dkc` is short for `docker compose`
 - `dkcb` Build or rebuild services
 - `dkcB` Build or rebuild services and do not use cache when building the image
 - `dkcd` Stop and remove containers, networks, images, and volumes
@@ -179,7 +180,7 @@ Defines [Docker][1] aliases and functions.
 - `dkcu` Create and start containers
 - `dkcU` Create and start containers in detached mode: Run containers in the
   background, print new container names
-- `dkcV` Show the Docker-Compose version information
+- `dkcv` Show the Docker Compose version information
 - `dkcx` Stop services
 
 ## Support

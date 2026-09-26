@@ -48,7 +48,7 @@ else
   path=($HOME/.gem/ruby/*/bin(N) $path)
 fi
 
-unset local_rbenv
+unset local_rbenv_paths local_rvm_paths
 
 # Return if requirements are not found.
 if (( ! $+commands[ruby] && ! $#functions[(i)r(benv|vm)] )); then
@@ -68,7 +68,7 @@ if ! zstyle -t ':prezto:module:ruby:alias' skip; then
     alias rbb='bundle'
     alias rbbc='bundle clean'
     alias rbbe='bundle exec'
-    alias rbbi='bundle install --path vendor/bundle'
+    alias rbbi='bundle config set --local path vendor/bundle && bundle install'
     alias rbbl='bundle list'
     alias rbbo='bundle open'
     alias rbbp='bundle package'

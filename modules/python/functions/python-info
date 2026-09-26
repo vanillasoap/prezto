@@ -40,8 +40,10 @@ fi
 if [[ -n "$version_format" ]]; then
   if (( $+commands[pyenv] )); then
     version="${"$(pyenv version)"%% *}"
-  elif (( $+commands[python] )); then
+  elif (( $+commands[python3] )); then
     version="${$(python3 --version)#Python }"
+  elif (( $+commands[python] )); then
+    version="${$(python --version 2>&1)#Python }"
   fi
 
   if [[ -n "$version" && "$version" != "system" ]]; then
