@@ -56,6 +56,20 @@ their improvements do not offset the completion cost in the table. A separate
 safe probe of installed pyenv 2.8.4 took about 50.5 ms to generate full init text
 with `--no-rehash`; it did not evaluate that text or measure rehash savings.
 
+## Warm completion-cache validation
+
+The fingerprint's filename ordering now uses byte collation in a temporary
+local scope. The caller's locale and completion-provider precedence are
+preserved. File discovery, modification-time checks, directory permission and
+ownership checks, locking and cache expiry still run as before.
+
+On the Intel Mac with Zsh 5.9 and `LC_ALL=en_US.UTF-8`, 30 interleaved warm
+samples per variant measured `prezto-compinit` at 36.0 ms before and 28.0 ms
+after, with 1,188 completion files. This is about 8 ms saved in completion
+initialization, not a measurement of whole-shell startup or interactive Tab
+latency. Profiling attributed the reduction to filename collation; deduplicating
+directory checks offered no useful improvement and was not retained.
+
 ## Interactive measurements
 
 The PTY benchmark measures prompt output, command readiness, filename completion,
@@ -142,7 +156,7 @@ See [Zsh's source and zcompile documentation][zcompile].
    Any deferred or cached alternative must preserve the default version, inherited
    PATH, `.nvmrc` behavior, `command node`, npm, child processes and completions.
    The current automatic Node selection remains enabled.
-2. Investigate a cheaper completion fingerprint while retaining immediate
+2. Further completion-fingerprint changes must retain immediate
    discovery, provider precedence, security checks, interruption recovery and
    concurrent-shell tests. Compare warm startup and rebuild cost before accepting
    a change; do not remove correctness checks to meet a timing target.

@@ -18,7 +18,11 @@ if ! zmodload -F zsh/system b:zsystem || ! zmodload -F zsh/stat b:zstat \
 fi
 
 {
-  files=(${^fpath}/_*(N))
+  # Fingerprint ordering needs stability, not locale-sensitive collation.
+  () {
+    local LC_ALL=C
+    files=(${^fpath}/_*(N))
+  }
   if (( $#files )); then
     zstat +mtime -A mtimes -- "$files[@]" || { compinit -i -D; return }
   fi

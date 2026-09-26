@@ -53,6 +53,21 @@ print -r -- "${_comps[$PREZTO_COMPLETE_COMMAND]-missing}"
         self.assertEqual(self.success(self.complete("git")), "_git\n")
         self.assertEqual(dump.stat().st_mtime_ns, before)
 
+    def test_unicode_providers_keep_precedence_and_caller_locale(self):
+        preferred = self.root / "preferred café"
+        preferred.mkdir()
+        (preferred / "_café").write_text("#compdef unicode-command\n")
+        (self.provider / "_fallback").write_text("#compdef unicode-command\n")
+        self.env["PREZTO_PREFERRED"] = str(preferred)
+        result = self.zsh('''
+export LC_ALL=POSIX
+fpath=("$PREZTO_PREFERRED" "$PREZTO_COMPLETIONS" $fpath)
+source "$PREZTO_TEST_REPO/init.zsh"
+pmodload completion || exit
+print -r -- "${_comps[unicode-command]}:$LC_ALL"
+''')
+        self.assertEqual(self.success(result), "_café:POSIX\n")
+
     def test_insecure_provider_is_ignored_even_with_a_warm_cache(self):
         (self.provider / "_test").write_text("#compdef private-command\n")
         self.assertEqual(self.success(self.complete("private-command")), "_test\n")
