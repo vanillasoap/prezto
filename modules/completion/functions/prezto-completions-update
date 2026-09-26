@@ -1,0 +1,68 @@
+# Generate native completion scripts explicitly, without running tools at startup.
+(
+  emulate -L zsh
+  umask 077
+
+  if [[ $1 == --help ]]; then
+    print 'usage: prezto-completions-update [pnpm fly pip ...]'
+    return 0
+  fi
+  (( $# )) || set -- pnpm fly pip
+
+  local program destination temporary script result=0
+  local -a arguments
+  for program in "$@"; do
+    case $program in
+      (pnpm|fly|pip) ;;
+      (*)
+        print -u2 -- "prezto-completions-update: unsupported program: $program"
+        return 1
+      ;;
+    esac
+  done
+
+  destination="${XDG_DATA_HOME:-$HOME/.local/share}/prezto/completions"
+  command mkdir -p -- "$destination" || return
+  # Completion generation should not depend on the current project's config.
+  builtin cd -q -- "$destination" || return
+
+  for program in "$@"; do
+    if (( ! $+commands[$program] )); then
+      print -u2 -- "prezto-completions-update: command not found: $program"
+      result=1
+      continue
+    fi
+    case $program in
+      (pnpm|fly) arguments=(completion zsh) ;;
+      (pip) arguments=(completion --zsh) ;;
+    esac
+    temporary="$(command mktemp "$destination/.$program.XXXXXXXX")" || return
+    {
+      if ! command "$program" "$arguments[@]" >| "$temporary" \
+          || [[ ! -s $temporary ]]; then
+        print -u2 -- "prezto-completions-update: $program failed; previous script preserved"
+        result=1
+        continue
+      fi
+      if [[ $program == pip ]]; then
+        # pip's generated script passes --options to compadd as its own flags.
+        script="$(<"$temporary")"
+        script=${script/'compadd $('/'compadd -- $('}
+        print -r -- "$script" >| "$temporary" || return
+      fi
+      if ! command zsh -dfn "$temporary"; then
+        print -u2 -- "prezto-completions-update: $program failed; previous script preserved"
+        result=1
+        continue
+      fi
+      if command mv -f -- "$temporary" "$destination/$program.zsh"; then
+        print -r -- "Updated $destination/$program.zsh"
+      else
+        result=1
+      fi
+    } always {
+      [[ ! -f $temporary ]] || command rm -f -- "$temporary"
+    }
+  done
+  return $result
+)
