@@ -1,0 +1,13 @@
+# Open directories in Finder, preserving operand boundaries.
+emulate -L zsh
+(( $# )) || set -- "$PWD"
+local directory
+local -a directories
+for directory in "$@"; do
+  if [[ ! -d $directory ]]; then
+    print -u2 -- "$0: not a directory: $directory"
+    return 1
+  fi
+  directories+=("${directory:a}")
+done
+command open -a Finder "$directories[@]"

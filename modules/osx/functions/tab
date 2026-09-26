@@ -1,56 +1,101 @@
-#
-# Opens a new Terminal.app/iTerm.app tab in the current directory.
-#
-# Authors:
-#   Sorin Ionescu <sorin.ionescu@gmail.com>
-#
+# Open a tab or split in the current directory. The split entry points link here.
+emulate -L zsh
+local layout=${0:t} terminal=$TERM_PROGRAM command_line
 
-# function tab {
+if [[ -n $SSH_CONNECTION || -n $SSH_TTY ]]; then
+  print -u2 -- "$0: terminal windows cannot be controlled from an SSH session"
+  return 1
+fi
 
-local command="cd \\\"$PWD\\\""
-(( $# > 0 )) && command="${command}; $*"
+case $terminal in
+  (Apple_Terminal|iTerm.app|ghostty) ;;
+  (*)
+    terminal="$(command osascript -e 'tell application "System Events" to get name of first application process whose frontmost is true')" || return
+  ;;
+esac
 
-the_app=$(
-  osascript 2> /dev/null <<EOF
-    tell application "System Events"
-      name of first item of (every process whose frontmost is true)
-    end tell
-EOF
-)
+# Quote for the new shell, then pass the result as AppleScript data, never source.
+command_line="builtin cd -- ${(qq)PWD}"
+(( $# )) && command_line+=" && ${(j: :)${(@qq)@}}"
 
-[[ "$the_app" == 'Terminal' ]] && {
-  osascript 2> /dev/null <<EOF
-    tell application "System Events"
-      tell process "Terminal" to keystroke "t" using command down
-      tell application "Terminal" to do script "${command}" in front window
-    end tell
-EOF
-}
-
-[[ "$the_app" == 'iTerm' ]] && {
-  osascript 2> /dev/null <<EOF
-    tell application "iTerm"
-      set current_terminal to current terminal
-      tell current_terminal
-        launch session "Default Session"
-        set current_session to current session
-        tell current_session
-          write text "${command}"
-        end tell
+case $terminal in
+  (ghostty|Ghostty)
+    command osascript - "$layout" "$PWD" "$command_line" > /dev/null <<'APPLESCRIPT'
+on run arguments
+  set layout to item 1 of arguments
+  tell application id "com.mitchellh.ghostty"
+    set cfg to new surface configuration
+    set initial working directory of cfg to item 2 of arguments
+    set initial input of cfg to (item 3 of arguments) & linefeed
+    if layout is "tab" then
+      set newTab to new tab in front window with configuration cfg
+      set newTerminal to focused terminal of newTab
+    else
+      set currentTerminal to focused terminal of selected tab of front window
+      if layout is "split_tab" then
+        set newTerminal to split currentTerminal direction down with configuration cfg
+      else
+        set newTerminal to split currentTerminal direction right with configuration cfg
+      end if
+    end if
+    focus newTerminal
+  end tell
+end run
+APPLESCRIPT
+  ;;
+  (iTerm.app|iTerm|iTerm2)
+    command osascript - "$layout" "$PWD" "$command_line" > /dev/null <<'APPLESCRIPT'
+on run arguments
+  set layout to item 1 of arguments
+  tell application id "com.googlecode.iterm2"
+    if layout is "tab" then
+      tell current window to set newTab to create tab with default profile
+      set newSession to current session of newTab
+    else
+      tell current session of current window
+        if layout is "split_tab" then
+          set newSession to split horizontally with same profile
+        else
+          set newSession to split vertically with same profile
+        end if
       end tell
+    end if
+    tell newSession
+      write text (item 3 of arguments)
+      select
     end tell
-EOF
-}
-
-[[ "$the_app" == 'iTerm2' ]] && {
-  osascript 2> /dev/null <<EOF
-    tell application "iTerm2"
-      tell current window
-        create tab with default profile
-        tell current session to write text "${command}"
-      end tell
+  end tell
+end run
+APPLESCRIPT
+  ;;
+  (Apple_Terminal|Terminal)
+    if [[ $layout != tab ]]; then
+      print -u2 -- "$0: Terminal.app does not support independent split sessions"
+      return 1
+    fi
+    command osascript - "$layout" "$PWD" "$command_line" > /dev/null <<'APPLESCRIPT'
+on run arguments
+  tell application "Terminal"
+    activate
+    set targetWindow to front window
+    set previousCount to count of tabs of targetWindow
+  end tell
+  tell application "System Events" to tell process "Terminal" to keystroke "t" using command down
+  repeat 100 times
+    tell application "Terminal"
+      if (count of tabs of targetWindow) > previousCount then
+        do script (item 3 of arguments) in selected tab of targetWindow
+        return
+      end if
     end tell
-EOF
-}
-
-# }
+    delay 0.02
+  end repeat
+  error "Terminal.app did not create a new tab"
+end run
+APPLESCRIPT
+  ;;
+  (*)
+    print -u2 -- "$0: unsupported terminal: $terminal"
+    return 1
+  ;;
+esac

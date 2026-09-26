@@ -24,6 +24,8 @@ zstyle ':prezto:module:osx:man' dash-keyword 'keyword'
 - `cdf` changes the current working director to the current _Finder_ directory.
 - `pushdf` pushes the current working directory onto the directory queue and
   changes the current working director to the current _Finder_ directory.
+- `showfiles` shows hidden files in Finder and restarts Finder.
+- `hidefiles` hides hidden files in Finder and restarts Finder.
 
 ## Functions
 
@@ -31,11 +33,34 @@ zstyle ':prezto:module:osx:man' dash-keyword 'keyword'
 - `manp` opens _man_ pages in _Preview.app_.
 - `pfd` prints the current _Finder_ directory.
 - `pfs` prints the current _Finder_ selection.
-- `tab` creates a new tab (works in both _Terminal_ and [_iTerm.app_][4]).
+- `ofd [directory ...]` opens directories in Finder, defaulting to the current
+  directory.
+- `tab [command [argument ...]]` creates a new tab in the current directory in
+  Terminal, [iTerm2][4], or [Ghostty 1.3+][6].
+- `split_tab [command [argument ...]]` creates a pane below the current pane in
+  iTerm2 or Ghostty.
+- `vsplit_tab [command [argument ...]]` creates a pane beside the current pane in
+  iTerm2 or Ghostty.
 - `ql` previews files in Quick Look.
 - `osx-rm-dir-metadata` deletes _`.DS_Store`_, _`__MACOSX`_ cruft.
 - `osx-ls-download-history` displays the macOS download history.
 - `osx-rm-download-history` deletes the macOS download history.
+- `trash` moves files and directories to the Finder Trash.
+
+Tab and split helpers preserve the current directory and command arguments:
+
+```sh
+tab nvim 'notes with spaces.md'
+split_tab pnpm dev
+vsplit_tab zsh -c 'git status; git log -5 --oneline'
+```
+
+Arguments are treated literally; use `zsh -c` explicitly for shell expressions.
+The helpers select the terminal from `TERM_PROGRAM`, falling back to the
+frontmost app, and operate on that app's front window. They do not run over SSH.
+macOS may request Automation permission when first called. Terminal.app's tab
+shortcut additionally needs Accessibility permission; it has no independent
+split-session API. iTerm2 and Ghostty use their scripting dictionaries.
 
 ## Authors
 
@@ -48,3 +73,4 @@ _The authors of this module should be contacted via the [issue tracker][5]._
 [3]: https://kapeli.com/dash
 [4]: https://www.iterm2.com/
 [5]: https://github.com/sorin-ionescu/prezto/issues
+[6]: https://ghostty.org/docs/features/applescript
