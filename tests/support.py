@@ -19,6 +19,8 @@ class ShellTestCase(unittest.TestCase):
         self.root = Path(self.temporary.name).resolve()
         self.bin = self.root / "bin"
         self.bin.mkdir()
+        # Helpers that invoke `zsh` must use the selected test version too.
+        (self.bin / "zsh").symlink_to(shutil.which(ZSH) or ZSH)
         self.config = self.root / "config"
         self.config.mkdir()
         self.env = {
