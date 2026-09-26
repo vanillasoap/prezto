@@ -69,6 +69,24 @@ __pip
         self.assertNotEqual(self.update("pnpm").returncode, 0)
         self.assertEqual(saved.read_text(), "# previous completion\n")
 
+    def test_scaleway_keeps_registration_without_reinitializing_completion(self):
+        self.stub("scw", '''
+printf '%s\\n' "$*" > "$TMPDIR/scw.arguments"
+cat <<'SCRIPT'
+autoload -U compinit && compinit
+_scw() { compadd -- instance; }
+compdef _scw scw
+SCRIPT
+''')
+        self.success(self.update("scw"))
+        self.assertEqual((self.root / "scw.arguments").read_text(), "autocomplete script shell=zsh\n")
+        result = self.zsh('''
+compinit() { print unexpected-reinitialization; }
+compdef() { print -r -- "$*"; }
+source "$XDG_DATA_HOME/prezto/completions/scw.zsh"
+''')
+        self.assertEqual(self.success(result), "_scw scw\n")
+
     def test_unknown_tool_is_rejected_before_generation(self):
         self.stub("pnpm", 'touch "$TMPDIR/should-not-execute"')
         self.assertNotEqual(self.update("pnpm unknown").returncode, 0)

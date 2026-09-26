@@ -4,7 +4,7 @@
   umask 077
 
   if [[ $1 == --help ]]; then
-    print 'usage: prezto-completions-update [pnpm pip ...]'
+    print 'usage: prezto-completions-update [pnpm pip scw ...] (default: pnpm pip)'
     return 0
   fi
   (( $# )) || set -- pnpm pip
@@ -13,7 +13,7 @@
   local -a arguments
   for program in "$@"; do
     case $program in
-      (pnpm|pip) ;;
+      (pnpm|pip|scw) ;;
       (*)
         print -u2 -- "prezto-completions-update: unsupported program: $program"
         return 1
@@ -35,6 +35,7 @@
     case $program in
       (pnpm) arguments=(completion zsh) ;;
       (pip) arguments=(completion --zsh) ;;
+      (scw) arguments=(autocomplete script shell=zsh) ;;
     esac
     temporary="$(command mktemp "$destination/.$program.XXXXXXXX")" || return
     {
@@ -48,6 +49,12 @@
         # pip's generated script passes --options to compadd as its own flags.
         script="$(<"$temporary")"
         script=${script/'compadd $('/'compadd -- $('}
+        print -r -- "$script" >| "$temporary" || return
+      elif [[ $program == scw ]]; then
+        # Prezto already owns compinit. Scaleway's standalone bootstrap would
+        # repeat it and can discard registrations installed by other tools.
+        script="$(<"$temporary")"
+        script=${script#'autoload -U compinit && compinit'$'\n'}
         print -r -- "$script" >| "$temporary" || return
       fi
       if ! command zsh -dfn "$temporary"; then

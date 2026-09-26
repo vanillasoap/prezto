@@ -15,6 +15,12 @@ This defaults to both tools. To update only selected tools, pass their names:
 prezto-completions-update pnpm pip
 ```
 
+Scaleway CLI is also supported when requested explicitly:
+
+```zsh
+prezto-completions-update scw
+```
+
 Scripts are stored in `${XDG_DATA_HOME:-$HOME/.local/share}/prezto/completions`.
 Each script is checked for successful generation, nonempty output and valid Zsh
 syntax before replacing its previous version. A missing tool or failed script
@@ -24,12 +30,14 @@ requested tools can still update successfully.
 The pip script receives one compatibility correction: completion candidates
 beginning with `--` are passed as data to Zsh's `compadd`, so pip options such as
 `--outdated` complete correctly.
+Scaleway's standalone `compinit` bootstrap is removed, retaining its native
+completion function without initializing the completion system a second time.
 
 Add this block after Prezto initialization in your personal shell configuration
 (for example, `.zshrc.local` if your `.zshrc` sources it):
 
 ```zsh
-for _prezto_program in pnpm pip; do
+for _prezto_program in pnpm pip scw; do
   _prezto_completion="${XDG_DATA_HOME:-$HOME/.local/share}/prezto/completions/$_prezto_program.zsh"
   if (( $+commands[$_prezto_program] )) && [[ -r $_prezto_completion ]]; then
     source "$_prezto_completion"
@@ -50,4 +58,5 @@ For example, Docker Desktop's `~/.docker/completions` belongs there. Prezto owns
 can discard their registrations.
 
 Sources: [pnpm completion](https://pnpm.io/completion),
-and [pip command completion](https://pip.pypa.io/en/stable/user_guide/#command-completion).
+[pip command completion](https://pip.pypa.io/en/stable/user_guide/#command-completion),
+and [Scaleway CLI setup](https://www.scaleway.com/en/docs/instances/api-cli/creating-managing-instances-with-cliv2/).
