@@ -1,5 +1,5 @@
 #
-# Shortens GitHub URLs.
+# Reports the retirement of GitHub's URL-shortening service.
 #
 # Authors:
 #   Sorin Ionescu <sorin.ionescu@gmail.com>
@@ -7,22 +7,7 @@
 
 # function git-hub-shorten-url {
 
-local url="$1" code="$2"
-
-if [[ "$url" == '-' ]]; then
-  read url <&0
-fi
-
-if [[ -z "$url" || ! "$url" =~ ^https?:\/\/.*github.com\/ ]]; then
-  print "usage: $0 [ url | - ] [code] ; url must be a github.com URL" >&2
-  return 1
-fi
-
-if (( $+commands[curl] )); then
-  print "${${(@M)${(f)"$(curl -s -i 'https://git.io' -F "url=$url" ${(z)code:+ -F "code=$code"})"}:#Location: *}#Location: }"
-else
-  print "$0: command not found: curl" >&2
-  return 1
-fi
+print -u2 -- "$0: GitHub retired git.io URL creation; use the original URL."
+return 1
 
 # }

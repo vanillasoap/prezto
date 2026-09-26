@@ -353,7 +353,8 @@ You can temporarily bypass an alias by prefixing it with a backward slash:
 - `git-commit-lost` lists lost commits.
 - `git-dir` displays the path to the Git directory.
 - `git-hub-browse` opens the [GitHub][3] repository in the default browser.
-- `git-hub-shorten-url` shortens [GitHub URLs][12].
+- `git-hub-shorten-url` is deprecated because [GitHub retired URL creation][12].
+  It reports the retirement without making a network request; use the original URL.
 - `git-info` exposes repository information via the `$git_info` associative
   array.
 - `git-root` displays the path to the working tree root.
@@ -472,6 +473,6 @@ _The authors of this module should be contacted via the [issue tracker][6]._
 [9]: https://git-scm.com/docs/git-submodule
 [10]: https://getgb.io/
 [11]: https://www.manpagez.com/man/1/gm/
-[12]: https://github.blog/2011-11-10-git-io-github-url-shortener
+[12]: https://github.blog/changelog/2022-01-11-git-io-no-longer-accepts-new-urls/
 [13]: ../completion#readme
 [14]: https://github.com/sorin-ionescu/prezto/pull/1929

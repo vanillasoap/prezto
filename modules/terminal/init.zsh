@@ -47,12 +47,13 @@ function _terminal-set-titles-with-command {
 
     # Make a local copy for use in the subshell.
     local -A jobtexts_from_parent_shell
-    jobtexts_from_parent_shell=(${(kv)jobtexts})
+    jobtexts_from_parent_shell=("${(@kv)jobtexts}")
 
     jobs "$job_name" 2> /dev/null > >(
-      read index discarded
+      read index discarded || return
       # The index is already surrounded by brackets: [1].
-      _terminal-set-titles-with-command "${(e):-\$jobtexts_from_parent_shell$index}"
+      local job_command="${jobtexts_from_parent_shell[${index[2,-2]}]}"
+      _terminal-set-titles-with-command "$job_command" "$job_command"
     )
   else
     # Set the command name, or in the case of sudo or ssh, the next command.
@@ -95,7 +96,20 @@ then
   # Sets the Terminal.app current working directory before the prompt is
   # displayed.
   function _terminal-set-terminal-app-proxy-icon {
-    printf '\e]7;%s\a' "file://${HOST}${PWD// /%20}"
+    emulate -L zsh
+    unsetopt MULTIBYTE
+    local LC_ALL=C character
+    local -i index
+    # URI escapes encode UTF-8 bytes, not Unicode code points.
+    printf '\e]7;file://%s' "$HOST"
+    for (( index = 1; index <= $#PWD; index++ )); do
+      character=$PWD[index]
+      case $character in
+        ([a-zA-Z0-9/._~-]) printf '%s' "$character" ;;
+        (*) printf '%%%02X' "'$character" ;;
+      esac
+    done
+    printf '\a'
   }
   add-zsh-hook precmd _terminal-set-terminal-app-proxy-icon
 
