@@ -2,13 +2,9 @@
 
 Sets [history][1] options and defines history aliases.
 
-**Note:** Default path of `HISTFILE` has changed from
-_`${ZDOTDIR:-$HOME}/.zhistory`_ to _`${ZDOTDIR:-$HOME}/.zsh_history`_. The file
-will be automatically renamed if possible (when the new one doesn't exist).
-Otherwise, if you want to preserve previous history, you will need to move them
-from _`${ZDOTDIR:-$HOME}/.zhistory`_ to _`${ZDOTDIR:-$HOME}/.zsh_history`_.
-
-Alternately, you can set `HISTFILE` manually to _`${ZDOTDIR:-$HOME}/.zhistory`_.
+History defaults to _`${ZDOTDIR:-$HOME}/.zsh_history`_. Existing files are not
+renamed or migrated. To keep an older `.zhistory` file, set `HISTFILE` to that
+path before loading Prezto, or use the `histfile` style below.
 
 ## Options
 
@@ -17,9 +13,8 @@ Alternately, you can set `HISTFILE` manually to _`${ZDOTDIR:-$HOME}/.zhistory`_.
   format.
 - `SHARE_HISTORY` shares history between all sessions. Note that
   `SHARE_HISTORY`, `INC_APPEND_HISTORY`, and `INC_APPEND_HISTORY_TIME` are
-  mutually exclusive.
+  mutually exclusive; this module clears the latter two when selecting sharing.
 - `HIST_EXPIRE_DUPS_FIRST` expires a duplicate event first when trimming history.
-- `HIST_IGNORE_DUPS` does not record an event that was just recorded again.
 - `HIST_IGNORE_ALL_DUPS` deletes an old recorded event if a new event is a
   duplicate.
 - `HIST_FIND_NO_DUPS` does not display a previously found event.
@@ -27,6 +22,21 @@ Alternately, you can set `HISTFILE` manually to _`${ZDOTDIR:-$HOME}/.zhistory`_.
 - `HIST_SAVE_NO_DUPS` does not write a duplicate event to the history file.
 - `HIST_VERIFY` does not execute immediately upon history expansion.
 - `HIST_BEEP` beeps when accessing non-existent history.
+
+Sharing makes commands from other sessions available immediately. It does not
+record accurate command durations, because entries are written before execution
+finishes. To keep each session's navigation independent and record durations,
+add this **after** loading Prezto in `.zshrc`:
+
+```sh
+unsetopt SHARE_HISTORY INC_APPEND_HISTORY
+setopt INC_APPEND_HISTORY_TIME
+```
+
+`HIST_IGNORE_ALL_DUPS` already covers adjacent duplicates, so the narrower
+`HIST_IGNORE_DUPS` option is unnecessary. Leading-space commands are removed
+from saved history, but remain briefly available in the current editing session;
+history filtering is not a secret-management mechanism.
 
 ## Variables
 
